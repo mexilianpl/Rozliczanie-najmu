@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rozliczenia mediów</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">🏠 <span>Moje Nieruchomości</span></div>
+    <nav>
+      <button class="nav active" data-view="dashboard">⚡ Rozliczenia mediów</button>
+      <button class="nav" data-view="lokale">🏢 Lokale i najemcy</button>
+      <button class="nav" data-view="liczniki">📟 Liczniki</button>
+      <button class="nav" data-view="platnosci">💳 Płatności</button>
+      <button class="nav" data-view="ustawienia">⚙️ Ustawienia</button>
+    </nav>
+    <small>wersja 0.1</small>
+  </aside>
+
+  <main>
+    <header>
+      <div>
+        <h1>Rozliczenia mediów</h1>
+        <p id="subtitle">Miesięczne rozliczenie lokali</p>
+      </div>
+      <div class="header-actions">
+        <input type="month" id="monthPicker">
+        <button class="primary" id="newReadingBtn">+ Dodaj odczyt</button>
+      </div>
+    </header>
+
+    <section id="dashboard" class="view active">
+      <div id="cards" class="cards"></div>
+
+      <div class="grid2">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Odczyty liczników</h2>
+            <button id="resetDemo" class="ghost">Przywróć dane demo</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Medium</th><th>Poprzedni</th><th>Aktualny</th><th>Zużycie</th><th>Stawka</th><th>Koszt</th><th></th></tr></thead>
+              <tbody id="metersTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Lokale i najemcy</h2></div>
+          <div id="tenantList"></div>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Rozliczenie lokali</h2>
+          <button id="printBtn" class="ghost">🖨️ Drukuj / PDF</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Lokal</th><th>Najemca</th><th>Media</th><th>Opłaty stałe</th><th>Razem</th><th>Wpłacono</th><th>Saldo</th><th>Status</th></tr></thead>
+            <tbody id="billingTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="lokale" class="view">
+      <section class="panel">
+        <div class="panel-head"><h2>Lokale i najemcy</h2><button id="addTenantBtn" class="primary">+ Dodaj lokal</button></div>
+        <div id="tenantEditor"></div>
+      </section>
+    </section>
+
+    <section id="liczniki" class="view">
+      <section class="panel">
+        <div class="panel-head"><h2>Liczniki i stawki</h2></div>
+        <div id="meterEditor"></div>
+      </section>
+    </section>
+
+    <section id="platnosci" class="view">
+      <section class="panel">
+        <div class="panel-head"><h2>Płatności</h2></div>
+        <div id="paymentsEditor"></div>
+      </section>
+    </section>
+
+    <section id="ustawienia" class="view">
+      <section class="panel">
+        <h2>Ustawienia</h2>
+        <p>Dane zapisują się lokalnie w tej przeglądarce. Ta wersja nie wymaga serwera ani bazy danych.</p>
+        <button id="exportBtn" class="primary">Eksportuj dane JSON</button>
+        <label class="import-label">Importuj dane JSON <input id="importFile" type="file" accept=".json"></label>
+      </section>
+    </section>
+  </main>
+</div>
+
+<dialog id="readingDialog">
+  <form method="dialog" id="readingForm">
+    <h3>Dodaj / zmień odczyt</h3>
+    <label>Medium<select id="readingMeter"></select></label>
+    <label>Aktualny odczyt<input id="readingValue" type="number" step="0.001" required></label>
+    <div class="dialog-actions"><button value="cancel" class="ghost">Anuluj</button><button value="default" id="saveReading" class="primary">Zapisz</button></div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
