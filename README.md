@@ -1,31 +1,19 @@
-# Rozliczenia mediów — wersja 0.1
+# Rozliczanie najmu — v0.2
 
-Prosty panel WWW do rozliczania mediów od najemców.
+Wersja do końcowego rozliczenia najemcy po zakończeniu umowy.
 
-## Funkcje
-- lokale i najemcy
-- prąd, zimna/ciepła woda, gaz
-- poprzedni i aktualny odczyt
-- automatyczne obliczanie zużycia i kosztu
-- udział lokalu w kosztach mediów
-- opłaty stałe
-- wpłaty, saldo i status płatności
-- drukowanie / zapis rozliczenia do PDF z przeglądarki
-- eksport/import danych JSON
-- responsywny wygląd na telefon
+Podmień na GitHubie:
+- index.html
+- style.css
+- app.js
 
-## Uruchomienie
-Wystarczy otworzyć `index.html` w przeglądarce.
-Dane zapisują się lokalnie w przeglądarce (`localStorage`).
-
-## Następny etap
-Wersja serwerowa może dostać:
-- logowanie
-- bazę danych
-- wiele nieruchomości
-- historię miesięcy
-- indywidualne liczniki na lokal
-- faktury/rachunki źródłowe
-- generowanie osobnych PDF dla najemców
-- automatyczny podział śmieci wg liczby osób / ogrzewania wg m²
-- kopie zapasowe.
+Funkcje:
+- lokal, najemca, daty najmu,
+- łączna wpłata na media,
+- stany początkowe i końcowe liczników,
+- zimna woda, ciepła woda, ogrzewanie,
+- dowolne dodatkowe liczniki,
+- opłaty stałe za okres,
+- automatyczne wyliczenie dopłaty lub zwrotu,
+- druk / PDF,
+- zapis lokalny oraz eksport/import JSON.
