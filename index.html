@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Kalkulator Najmu</title>
-<link rel="stylesheet" href="style.css?v=201">
+<link rel="stylesheet" href="style.css?v=202">
 </head>
 <body>
 <div class="app-shell">
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-icon">⌂</div>
-      <div><b>Kalkulator Najmu</b><span>v2.0.1</span></div>
+      <div><b>Kalkulator Najmu</b><span>v2.0.2</span></div>
     </div>
     <nav id="nav">
       <button class="nav-btn active" data-view="dashboard">⌂ <span>Pulpit</span></button>
@@ -29,7 +29,7 @@
   <main class="content">
     <header class="topbar">
       <div><h1 id="pageTitle">Pulpit</h1><p id="pageSub">Szybki przegląd obu mieszkań</p></div>
-      <div class="version-pill">Kalkulator Najmu • v2.0.1</div>
+      <div class="version-pill">Kalkulator Najmu • v2.0.2</div>
     </header>
 
     <section class="view active" id="view-dashboard">
@@ -177,10 +177,10 @@
     <div class="modal-head"><h3>Wyślij rozliczenie</h3><button id="sendClose">×</button></div>
     <p id="sendInfo" class="muted"></p>
     <div class="send-options">
-      <button id="sendEmail" class="send-option">✉ <span><b>E-mail</b><small>Otwórz wiadomość z gotową treścią</small></span></button>
-      <button id="sendWhatsApp" class="send-option">☏ <span><b>WhatsApp</b><small>Gotowa treść wiadomości</small></span></button>
-      <button id="sendMessenger" class="send-option">◉ <span><b>Messenger</b><small>Skopiuj treść i otwórz Messenger</small></span></button>
-      <button id="sendShare" class="send-option">↗ <span><b>Udostępnij</b><small>Systemowe udostępnianie telefonu</small></span></button>
+      <button id="sendEmail" class="send-option">✉ <span><b>E-mail + PDF</b><small>Otwórz wiadomość z gotową treścią</small></span></button>
+      <button id="sendWhatsApp" class="send-option">☏ <span><b>WhatsApp + PDF</b><small>Gotowa treść wiadomości</small></span></button>
+      <button id="sendMessenger" class="send-option">◉ <span><b>Messenger + PDF</b><small>Skopiuj treść i otwórz Messenger</small></span></button>
+      <button id="sendShare" class="send-option">↗ <span><b>Udostępnij PDF</b><small>Systemowe udostępnianie telefonu</small></span></button>
     </div>
     <label class="full">Treść wiadomości<textarea id="sendPreview" rows="11"></textarea></label>
     <div class="actions"><button id="copySendText" class="ghost">Kopiuj treść</button></div>
@@ -199,10 +199,13 @@
   </div>
 </div>
 
-<script src="history-data.js?v=201"></script>
+<script src="apartments/spokojna.js?v=202"></script>
+<script src="apartments/wroclawska.js?v=202"></script>
+<script src="data/history-spokojna.js?v=202"></script>
+<script src="data/history-wroclawska.js?v=202"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
-<script src="app.js?v=201"></script>
+<script src="app.js?v=202"></script>
 </body>
 </html>

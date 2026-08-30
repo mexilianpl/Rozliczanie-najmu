@@ -1,6 +1,16 @@
 (()=>{"use strict";
-const VERSION="2.0.1", KEY="kalkulatorNajmuV201";
-const HIST=(window.RENTAL_HISTORY&&window.RENTAL_HISTORY.records)||[];
+const VERSION="2.0.2", KEY="kalkulatorNajmuV202";
+const APARTMENTS={
+spokojna:window.APARTMENT_SPOKOJNA,
+wroclawska:window.APARTMENT_WROCLAWSKA
+};
+const HIST=(()=>{
+ const map=new Map();
+ const add=(apt,rows)=>{for(const row of (rows||[])){if(!map.has(row.period))map.set(row.period,{period:row.period,spokojna:{},wroclawska:{}});map.get(row.period)[apt]=row.data||{}}};
+ add("spokojna",window.HISTORY_SPOKOJNA);
+ add("wroclawska",window.HISTORY_WROCLAWSKA);
+ return [...map.values()].sort((a,b)=>a.period.localeCompare(b.period));
+})();
 const PLN=x=>new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN"}).format(num(x));
 const N=x=>new Intl.NumberFormat("pl-PL",{maximumFractionDigits:3}).format(num(x));
 const num=x=>{if(typeof x==="number")return Number.isFinite(x)?x:0;const v=Number(String(x??"").replace(/\s/g,"").replace(",","."));return Number.isFinite(v)?v:0};
@@ -14,12 +24,12 @@ const initialState={
  photos:{spokojna:"",wroclawska:""},
  customRecords:[],
  current:{
-   spokojna:{period:latestRecord.period,tenants:latest("spokojna").tenants||[],email:"",phone:"",rent:latest("spokojna").rent||2800,admin:latest("spokojna").admin||735.96,gas:0,electricity:0,other:[]},
-   wroclawska:{period:latestRecord.period,tenants:latest("wroclawska").tenants||["Dagmara i Dawid"],email:"",phone:"",rent:latest("wroclawska").rent||2400,admin:latest("wroclawska").admin||439.46,gas:0,electricity:0,other:[]}
+   spokojna:clone(APARTMENTS.spokojna.defaultCurrent),
+   wroclawska:clone(APARTMENTS.wroclawska.defaultCurrent)
  },
  ads:{
-   spokojna:{title:"Mieszkanie do wynajęcia – Spokojna",rent:2800,admin:735.96,deposit:"",area:"",floor:"",available:"",phone:"",description:"",gallery:[]},
-   wroclawska:{title:"Kawalerka do wynajęcia – Wrocławska 53A",rent:2400,admin:439.46,deposit:"",area:"24 m²",floor:"5",available:"",phone:"532 691 161",description:"Świetna lokalizacja, bez pośredników.",gallery:[]}
+   spokojna:clone(APARTMENTS.spokojna.adDefaults),
+   wroclawska:clone(APARTMENTS.wroclawska.adDefaults)
  },
  settlement:{
    apt:"wroclawska",tenant:"Dagmara Nowak i Dawid Wojsław",from:"2026-03-01",to:"2026-08-31",months:6,
@@ -105,6 +115,30 @@ function renderHistory(){
  $("historyBody").innerHTML=out.join("");$("historyInfo").textContent=`${HIST.length} miesięcy szczegółowej historii przeniesionej z Excela + nowe wpisy aplikacji.`;
 }
 
+
+function monthlySettlementPdfFile(apt){
+ if(!window.jspdf?.jsPDF) throw new Error("Moduł PDF nie został załadowany.");
+ const {jsPDF}=window.jspdf,doc=new jsPDF(),d=state.current[apt],other=(d.other||[]).filter(x=>num(x.amount)!==0);
+ doc.setFontSize(17);doc.text("ROZLICZENIE NAJMU",14,16);
+ doc.setFontSize(11);doc.text(`Mieszkanie: ${aptLabel(apt)}`,14,25);doc.text(`Okres: ${periodPL(d.period)}`,14,32);
+ const body=[["Czynsz najmu",PLN(d.rent)],["Czynsz administracyjny",PLN(d.admin)],["Gaz",PLN(d.gas)],["Prad",PLN(d.electricity)],...other.map(x=>[x.name||"Inna oplata",PLN(x.amount)])];
+ doc.autoTable({startY:42,head:[["Pozycja","Kwota"]],body,foot:[["RAZEM DO WPLATY",PLN(aptTotal(d))]]});
+ const blob=doc.output("blob"),safe=(aptLabel(apt)+"_"+(d.period||"rozliczenie")).replace(/\s+/g,"_");
+ return new File([blob],`Rozliczenie_${safe}.pdf`,{type:"application/pdf"});
+}
+async function shareMonthlyPdf(apt){
+ const file=monthlySettlementPdfFile(apt),d=state.current[apt],title=`Rozliczenie najmu – ${aptLabel(apt)} – ${periodPL(d.period)}`;
+ if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+   await navigator.share({title,text:$("sendPreview").value,files:[file]});
+   return true;
+ }
+ return false;
+}
+function downloadMonthlyPdf(apt){
+ const file=monthlySettlementPdfFile(apt),url=URL.createObjectURL(file),a=document.createElement("a");
+ a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);return file;
+}
+
 let sendApt=null;
 function monthlySettlementText(apt){
  const d=state.current[apt], other=(d.other||[]).filter(x=>num(x.amount)!==0);
@@ -135,25 +169,35 @@ $("sendClose").onclick=closeSendModal;
 $("copySendText").onclick=async()=>{
  try{await navigator.clipboard.writeText($("sendPreview").value);alert("Treść skopiowana.")}catch{$("sendPreview").select();document.execCommand("copy");alert("Treść skopiowana.")}
 };
-$("sendEmail").onclick=()=>{
- if(!sendApt)return;const d=state.current[sendApt], subject=`Rozliczenie najmu – ${aptLabel(sendApt)} – ${periodPL(d.period)}`;
- window.location.href=`mailto:${encodeURIComponent((d.email||"").trim())}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent($("sendPreview").value)}`;
+$("sendEmail").onclick=async()=>{
+ if(!sendApt)return;
+ try{if(await shareMonthlyPdf(sendApt))return}catch(e){if(e?.name==="AbortError")return}
+ const d=state.current[sendApt],subject=`Rozliczenie najmu – ${aptLabel(sendApt)} – ${periodPL(d.period)}`;
+ downloadMonthlyPdf(sendApt);
+ window.location.href=`mailto:${encodeURIComponent((d.email||"").trim())}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent($("sendPreview").value+"\n\nPDF został pobrany na urządzenie. Dołącz go do wiadomości.")}`;
 };
-$("sendWhatsApp").onclick=()=>{
- if(!sendApt)return;const d=state.current[sendApt], phone=String(d.phone||"").replace(/\D/g,"");
- const base=phone?`https://wa.me/${phone.startsWith("48")?phone:"48"+phone}`:"https://wa.me/";
- window.open(`${base}?text=${encodeURIComponent($("sendPreview").value)}`,"_blank","noopener");
+$("sendWhatsApp").onclick=async()=>{
+ if(!sendApt)return;
+ try{if(await shareMonthlyPdf(sendApt))return}catch(e){if(e?.name==="AbortError")return}
+ downloadMonthlyPdf(sendApt);
+ const d=state.current[sendApt],phone=String(d.phone||"").replace(/\D/g,""),base=phone?`https://wa.me/${phone.startsWith("48")?phone:"48"+phone}`:"https://wa.me/";
+ window.open(`${base}?text=${encodeURIComponent($("sendPreview").value+"\n\nPDF został pobrany — dołącz go do rozmowy.")}`,"_blank","noopener");
 };
 $("sendMessenger").onclick=async()=>{
+ if(!sendApt)return;
+ try{if(await shareMonthlyPdf(sendApt))return}catch(e){if(e?.name==="AbortError")return}
+ downloadMonthlyPdf(sendApt);
  try{await navigator.clipboard.writeText($("sendPreview").value)}catch{}
  window.open("https://www.messenger.com/","_blank","noopener");
- alert("Treść rozliczenia została skopiowana. W Messengerze wybierz osobę i wklej wiadomość.");
+ alert("PDF został pobrany, a treść skopiowana. Wybierz osobę w Messengerze, wklej treść i dołącz PDF.");
 };
 $("sendShare").onclick=async()=>{
- if(!sendApt)return;const d=state.current[sendApt],title=`Rozliczenie najmu – ${aptLabel(sendApt)} – ${periodPL(d.period)}`;
- if(navigator.share){try{await navigator.share({title,text:$("sendPreview").value});return}catch(e){if(e?.name==="AbortError")return}}
- alert("Systemowe udostępnianie nie jest dostępne w tej przeglądarce. Użyj E-mail, WhatsApp lub Messenger.");
+ if(!sendApt)return;
+ try{if(await shareMonthlyPdf(sendApt))return}catch(e){if(e?.name==="AbortError")return}
+ downloadMonthlyPdf(sendApt);
+ alert("Przeglądarka nie obsługuje bezpośredniego udostępniania PDF. Plik został pobrany.");
 };
+
 let ocrTarget=null,ocrFileInput=null;
 function openBillScanner(apt,key){
  ocrTarget={apt,key};if(!ocrFileInput){ocrFileInput=document.createElement("input");ocrFileInput.type="file";ocrFileInput.accept="image/*";ocrFileInput.onchange=()=>{const f=ocrFileInput.files[0];if(f)runOCR(f);ocrFileInput.value=""}}ocrFileInput.click();

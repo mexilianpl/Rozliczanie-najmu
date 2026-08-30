@@ -1,17 +1,18 @@
-# Kalkulator Najmu v2.0.1
+# Kalkulator Najmu v2.0.2
 
-Nowości:
-- szybki przycisk „Wyślij” na karcie każdego mieszkania,
-- E-mail z automatycznie przygotowanym tematem i treścią,
-- WhatsApp z gotową treścią rozliczenia,
-- Messenger: automatyczne kopiowanie treści + otwarcie Messengera,
-- systemowe „Udostępnij” na telefonie (można wybrać WhatsApp, Messenger, SMS, e-mail itd.),
-- pola e-mail i telefon/WhatsApp w danych bieżącego najemcy.
+Zmiany:
+- PDF jest generowany również dla miesięcznego rozliczenia z przycisku „Wyślij”.
+- Na telefonach, które obsługują udostępnianie plików z przeglądarki, PDF jest przekazywany do systemowego menu udostępniania. Stamtąd można wybrać WhatsApp, Messenger lub e-mail.
+- Gdy przeglądarka tego nie obsługuje, PDF jest automatycznie pobierany, a wybrana aplikacja otwierana z gotową treścią.
+- Spokojna i Wrocławska mają osobne pliki konfiguracji i osobne pliki historii.
 
-Messenger nie pozwala zwykłej stronie WWW bez aplikacji Facebooka automatycznie wstawić tekst do konkretnej rozmowy. Dlatego aplikacja kopiuje treść i otwiera Messenger — wystarczy wybrać osobę i wkleić.
-
-Wgraj 4 pliki:
+Struktura:
 - index.html
 - style.css
 - app.js
-- history-data.js
+- apartments/spokojna.js
+- apartments/wroclawska.js
+- data/history-spokojna.js
+- data/history-wroclawska.js
+
+Po aktualizacji usuń stary plik history-data.js z repozytorium, bo nie jest już używany.
