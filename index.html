@@ -11,7 +11,7 @@
 <header>
   <div>
     <h1>Rozliczenie końcowe najmu</h1>
-    <p>Porównanie zaliczek z rzeczywistym zużyciem mediów</p>
+    <p>Media, kaucja i dodatkowe koszty</p>
   </div>
   <div class="actions">
     <button onclick="window.print()">🖨️ Drukuj / PDF</button>
@@ -75,21 +75,27 @@
 </div>
 
 <section>
-<h2>Dodatkowe rozliczenie</h2>
-<div class="grid extras">
-  <label>Prąd – koszt do potrącenia<input id="prad" type="number" step=".01"></label>
-  <label>Uszkodzenia / inne potrącenia<input id="szkody" type="number" step=".01"></label>
-  <label>Kaucja do rozliczenia<input id="kaucja" type="number" step=".01"></label>
+<h2>Dodatkowe koszty / potrącenia z kaucji</h2>
+<p class="hint">Dodaj dowolne pozycje, np. farba, wałki, taśmy, rachunek za prąd, sprzątanie lub naprawy.</p>
+<div class="table">
+<table>
+<thead><tr><th>Pozycja</th><th>Ilość</th><th>Cena jednostkowa</th><th>Razem</th><th class="no-print">Akcja</th></tr></thead>
+<tbody id="extras"></tbody>
+<tfoot><tr><th colspan="3">SUMA DODATKOWYCH KOSZTÓW</th><th id="extrasTotal"></th><th class="no-print"></th></tr></tfoot>
+</table>
 </div>
+<button id="addExtra" class="primary no-print">+ Dodaj pozycję</button>
 </section>
 
 <section>
-<h2>Końcowe podsumowanie</h2>
+<h2>Kaucja i końcowe podsumowanie</h2>
+<div class="grid one">
+  <label>Kaucja<input id="kaucja" type="number" step=".01"></label>
+</div>
 <div class="sum">
-  <div>Rozliczenie mediów <b id="fm"></b></div>
-  <div>Prąd <b id="fp"></b></div>
-  <div>Uszkodzenia / inne <b id="fs"></b></div>
   <div>Kaucja <b id="fk"></b></div>
+  <div>Rozliczenie mediów <b id="fm"></b></div>
+  <div>Dodatkowe koszty / potrącenia <b id="fd"></b></div>
   <div class="total">Końcowo <b id="final"></b></div>
 </div>
 </section>

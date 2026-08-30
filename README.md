@@ -1,11 +1,17 @@
-# Rozliczanie najmu v0.5
+# Rozliczanie najmu v0.6
 
-Czytelniejsze rozliczenie kosztów:
-- Woda + odprowadzenie ścieków = zużycie zimnej wody + zużycie ciepłej wody.
-- Podgrzanie ciepłej wody = osobna opłata liczona ponownie z zużycia ciepłej wody.
-- Centralne ogrzewanie = osobno według GJ.
+Nowość:
+- dynamiczna tabela dodatkowych kosztów / potrąceń,
+- przycisk „+ Dodaj pozycję”,
+- pola: nazwa, ilość, cena jednostkowa, suma,
+- dowolna liczba pozycji,
+- automatyczna suma potrąceń,
+- końcowy wynik: kaucja + wynik mediów - dodatkowe koszty.
 
-W tabeli widoczne jest pełne wyjaśnienie, z czego wynika każda kwota.
+Przykładowe pozycje:
+- rachunek za prąd,
+- farba,
+- wałki / taśmy / materiały.
 
 Podmień na GitHubie:
 - index.html
