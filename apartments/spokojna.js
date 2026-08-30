@@ -1,0 +1,1 @@
+window.APARTMENT_SPOKOJNA={"id":"spokojna","label":"Spokojna","defaultCurrent":{"period":"2026-08","tenants":[],"email":"","phone":"","rent":2800.0,"admin":735.96,"gas":0,"electricity":0,"other":[]},"adDefaults":{"title":"Mieszkanie do wynajęcia – Spokojna","rent":2800,"admin":735.96,"deposit":"","area":"","floor":"","available":"","phone":"","description":"","gallery":[]}};
