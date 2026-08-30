@@ -1,4 +1,4 @@
-const K="rozliczenie-v06";
+const K="rozliczenie-v07";
 const base={
   lokal:"Wrocławska 53A/42",najemca:"",
   od:"2026-03-01",do:"2026-08-31",mies:6,
@@ -52,4 +52,21 @@ $("addExtra").onclick=()=>{d.extras.push({name:"",qty:1,price:0});save();render(
 ["mies","zwStart","zwEnd","cwStart","cwEnd","coStart","coEnd","kaucja"].forEach(k=>$(k).oninput=e=>{d[k]=+e.target.value;save();render()});
 $("save").onclick=()=>{save();alert("Dane zapisane.")};$("reset").onclick=()=>{if(confirm("Przywrócić dane przykładowe?")){d=structuredClone(base);save();render()}};
 $("export").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));a.download="rozliczenie-najmu-v06.json";a.click()};
+$("clearData").onclick=()=>{
+  if(confirm("Czy na pewno wyczyścić wszystkie wpisane dane? Tej operacji nie można cofnąć.")){
+    d={
+      lokal:"",najemca:"",
+      od:"",do:"",mies:0,
+      zwStart:0,zwEnd:0,
+      cwStart:0,cwEnd:0,
+      coStart:0,coEnd:0,
+      stawki:{wodaScieki:0,podgrzanie:0,co:0},
+      zaliczki:{wodaScieki:0,podgrzanie:0,co:0},
+      kaucja:0,
+      extras:[]
+    };
+    save();
+    render();
+  }
+};
 render();
