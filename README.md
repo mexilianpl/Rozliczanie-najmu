@@ -1,17 +1,11 @@
-# Kalkulator Najmu v2.0.3
+# Kalkulator Najmu v2.0.4
 
 Zmiany:
-- osobny przycisk **Pobierz PDF** bezpośrednio na karcie każdego mieszkania,
-- pozostaje przycisk **Wyślij** z E-mail / WhatsApp / Messenger / Udostępnij PDF,
-- na telefonie systemowe udostępnianie może przekazać rzeczywisty PDF do wybranej aplikacji,
-- na komputerze E-mail pobiera PDF i otwiera domyślny program pocztowy z gotowym tematem i treścią,
-- zachowana rozdzielona struktura danych Spokojnej i Wrocławskiej.
+- poprawione wyświetlanie miesiąca „sierpień” w PDF,
+- całkowicie przeprojektowany miesięczny PDF,
+- wygląd PDF nawiązuje do karty mieszkania z pulpitu: ciemne tło, turkusowy nagłówek, jasne pozycje i wyróżniona suma,
+- zachowany osobny przycisk Pobierz PDF i moduł wysyłki,
+- zachowane osobne pliki Spokojnej i Wrocławskiej.
 
-Struktura:
-- index.html
-- style.css
-- app.js
-- apartments/spokojna.js
-- apartments/wroclawska.js
-- data/history-spokojna.js
-- data/history-wroclawska.js
+Link bez cache po publikacji:
+https://mexilianpl.github.io/Rozliczanie-najmu/?v=2040830

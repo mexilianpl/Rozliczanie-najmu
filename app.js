@@ -1,5 +1,5 @@
 (()=>{"use strict";
-const VERSION="2.0.3", KEY="kalkulatorNajmuV203";
+const VERSION="2.0.4", KEY="kalkulatorNajmuV204";
 const APARTMENTS={
 spokojna:window.APARTMENT_SPOKOJNA,
 wroclawska:window.APARTMENT_WROCLAWSKA
@@ -43,7 +43,12 @@ function clone(x){return JSON.parse(JSON.stringify(x))}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));return s&&s.version===VERSION?s:clone(initialState)}catch{return clone(initialState)}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){alert("Pamięć przeglądarki jest pełna. Usuń część zdjęć z galerii lub wyeksportuj dane.")}}
 function allRecords(){const map=new Map(HIST.map(r=>[r.period,clone(r)]));for(const r of state.customRecords){const base=map.get(r.period)||{period:r.period,spokojna:{},wroclawska:{}};base[r.apartment]=clone(r.data);map.set(r.period,base)}return [...map.values()].sort((a,b)=>a.period.localeCompare(b.period))}
-function periodPL(p){if(!p)return"";const [y,m]=p.split("-").map(Number);return new Intl.DateTimeFormat("pl-PL",{month:"long",year:"numeric"}).format(new Date(y,m-1,1))}
+function periodPL(p){
+ const mies=["styczeń","luty","marzec","kwiecień","maj","czerwiec","lipiec","sierpień","wrzesień","październik","listopad","grudzień"];
+ const [y,m]=String(p||"").split("-");
+ const mi=Number(m)-1;
+ return (mi>=0&&mi<12&&y)?`${mies[mi]} ${y}`:String(p||"");
+}
 function aptLabel(a){return a==="spokojna"?"Spokojna":"Wrocławska"}
 function aptTotal(d){return num(d.rent)+num(d.admin)+num(d.gas)+num(d.electricity)+(d.other||[]).reduce((s,x)=>s+num(x.amount),0)}
 function setView(name){
@@ -116,16 +121,93 @@ function renderHistory(){
 }
 
 
+
+function addUnicodeTextImage(doc,text,x,y,opts={}){
+ const scale=3,canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
+ const size=opts.size||14,weight=opts.weight||400,color=opts.color||"#b5c6d6";
+ ctx.font=`${weight} ${size*scale}px Arial, sans-serif`;
+ const width=Math.ceil(ctx.measureText(text).width)+12*scale,height=Math.ceil(size*1.5*scale);
+ canvas.width=width;canvas.height=height;
+ ctx.font=`${weight} ${size*scale}px Arial, sans-serif`;
+ ctx.fillStyle=color;ctx.textBaseline="top";ctx.fillText(text,2*scale,0);
+ const mmW=(width/scale)*0.264583,mmH=(height/scale)*0.264583;
+ doc.addImage(canvas.toDataURL("image/png"),"PNG",x,y,mmW,mmH);
+}
+
+function pdfPLN(v){return Number(num(v)).toLocaleString("pl-PL",{minimumFractionDigits:2,maximumFractionDigits:2})+" zl";}
 function monthlySettlementPdfFile(apt){
  if(!window.jspdf?.jsPDF) throw new Error("Moduł PDF nie został załadowany.");
- const {jsPDF}=window.jspdf,doc=new jsPDF(),d=state.current[apt],other=(d.other||[]).filter(x=>num(x.amount)!==0);
- doc.setFontSize(17);doc.text("ROZLICZENIE NAJMU",14,16);
- doc.setFontSize(11);doc.text(`Mieszkanie: ${aptLabel(apt)}`,14,25);doc.text(`Okres: ${periodPL(d.period)}`,14,32);
- const body=[["Czynsz najmu",PLN(d.rent)],["Czynsz administracyjny",PLN(d.admin)],["Gaz",PLN(d.gas)],["Prad",PLN(d.electricity)],...other.map(x=>[x.name||"Inna oplata",PLN(x.amount)])];
- doc.autoTable({startY:42,head:[["Pozycja","Kwota"]],body,foot:[["RAZEM DO WPLATY",PLN(aptTotal(d))]]});
+ const {jsPDF}=window.jspdf,doc=new jsPDF({unit:"mm",format:"a4"}),d=state.current[apt],other=(d.other||[]).filter(x=>num(x.amount)!==0);
+
+ // Kolory inspirowane kartą z pulpitu
+ const bg=[8,20,31], card=[14,31,47], line=[42,63,82], teal1=[30,89,92], teal2=[24,145,140], text=[238,246,255], muted=[181,198,214], accent=[89,235,213];
+ const x=18,y=20,w=174,headH=43;
+
+ // Tło strony
+ doc.setFillColor(...bg); doc.rect(0,0,210,297,"F");
+
+ // Karta
+ doc.setFillColor(...card); doc.roundedRect(x,y,w,232,5,5,"F");
+
+ // Gradient-like header: two teal blocks
+ doc.setFillColor(...teal1); doc.roundedRect(x,y,w,headH,5,5,"F");
+ doc.setFillColor(...teal2); doc.rect(x+w*0.48,y,w*0.52,headH,"F");
+
+ // Nagłówek
+ doc.setTextColor(...text); doc.setFont("helvetica","bold"); doc.setFontSize(22);
+ doc.text(aptLabel(apt),x+7,y+27);
+
+ // Sekcja informacji
+ let cy=y+58;
+ doc.setFontSize(15); doc.text(aptLabel(apt).toUpperCase(),x+7,cy);
+ doc.setFont("helvetica","normal"); doc.setFontSize(10.5); doc.setTextColor(...muted);
+ addUnicodeTextImage(doc,periodPL(d.period),x+6.3,cy+3.5,{size:10.5,color:"#b5c6d6"});
+
+ // Status
+ doc.setFillColor(218,255,248); doc.roundedRect(x+w-27,cy-7,20,8,2,2,"F");
+ doc.setTextColor(26,120,113); doc.setFontSize(8.5); doc.text("Biezace",x+w-24.5,cy-1.3);
+
+ // Najemca
+ if(d.tenants?.length){
+   doc.setTextColor(...muted); doc.setFontSize(9.5);
+   doc.text("Najemca: "+d.tenants.join(", "),x+7,cy+17);
+   cy += 10;
+ }
+
+ // Pozycje
+ cy += 24;
+ const rows=[
+   ["Czynsz najmu",pdfPLN(d.rent)],
+   ["Czynsz administracyjny",pdfPLN(d.admin)],
+   ["Gaz",pdfPLN(d.gas)],
+   ["Prad",pdfPLN(d.electricity)],
+   ...other.map(x=>[x.name||"Inna oplata",pdfPLN(x.amount)])
+ ];
+
+ doc.setFontSize(10.5);
+ for(const [label,val] of rows){
+   doc.setTextColor(...muted); doc.setFont("helvetica","normal"); doc.text(label,x+7,cy);
+   doc.setTextColor(...text); doc.setFont("helvetica","bold"); doc.text(val,x+w-7,cy,{align:"right"});
+   cy += 8.8;
+   doc.setDrawColor(...line); doc.setLineWidth(.25); doc.line(x+7,cy-4.2,x+w-7,cy-4.2);
+ }
+
+ // Razem
+ cy += 8;
+ doc.setDrawColor(...line); doc.setLineWidth(.35); doc.line(x+7,cy-4,x+w-7,cy-4);
+ doc.setTextColor(...text); doc.setFont("helvetica","bold"); doc.setFontSize(10.5);
+ doc.text("RAZEM DO WPLATY",x+7,cy+7);
+ doc.setTextColor(...accent); doc.setFontSize(17);
+ doc.text(pdfPLN(aptTotal(d)),x+w-7,cy+7,{align:"right"});
+
+ // Stopka
+ doc.setTextColor(120,145,165); doc.setFont("helvetica","normal"); doc.setFontSize(8);
+ doc.text("Kalkulator Najmu v2.0.4",x+7,y+224);
+
  const blob=doc.output("blob"),safe=(aptLabel(apt)+"_"+(d.period||"rozliczenie")).replace(/\s+/g,"_");
  return new File([blob],`Rozliczenie_${safe}.pdf`,{type:"application/pdf"});
 }
+
 async function shareMonthlyPdf(apt){
  const file=monthlySettlementPdfFile(apt),d=state.current[apt],title=`Rozliczenie najmu – ${aptLabel(apt)} – ${periodPL(d.period)}`;
  if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
