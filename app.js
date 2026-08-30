@@ -1,6 +1,6 @@
 (()=>{"use strict";
-const VERSION="2.0.5", KEY="kalkulatorNajmuV205";
-const PREVIOUS_KEYS=["kalkulatorNajmuV204","kalkulatorNajmuV203","kalkulatorNajmuV202","kalkulatorNajmuV201","kalkulatorNajmuV200"];
+const VERSION="2.0.6", KEY="kalkulatorNajmuV206";
+const PREVIOUS_KEYS=["kalkulatorNajmuV205","kalkulatorNajmuV204","kalkulatorNajmuV203","kalkulatorNajmuV202","kalkulatorNajmuV201","kalkulatorNajmuV200"];
 const TAX_CONFIG=window.RENTAL_TAX_CONFIG||{rate:.085};
 const APARTMENTS={
 spokojna:window.APARTMENT_SPOKOJNA,
@@ -84,7 +84,7 @@ function setView(name){
  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===name));
  const titles={dashboard:["Pulpit","Szybki przegląd obu mieszkań"],spokojna:["Spokojna","Miesięczne rozliczenie mieszkania"],wroclawska:["Wrocławska","Miesięczne rozliczenie mieszkania"],history:["Historia wpłat","Dane przeniesione z wieloletniego arkusza"],settlement:["Rozliczenie końcowe","Media, kaucja i potrącenia"],ads:["Ogłoszenia","Zdjęcia i treść nowego ogłoszenia"],settings:["Ustawienia / dane","Zdjęcia, eksport i kopie bezpieczeństwa"]};
  $("pageTitle").textContent=titles[name]?.[0]||"";$("pageSub").textContent=titles[name]?.[1]||"";
- if(name==="dashboard")renderDashboard();if(name==="history")renderHistory();if(name==="settlement")renderSettlement();if(name==="ads")renderAds();
+ if(name==="dashboard")renderDashboard();if(name==="history")renderHistory();if(name==="taxes")renderTaxes();if(name==="settlement")renderSettlement();if(name==="ads")renderAds();
 }
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
 document.addEventListener("click",e=>{const go=e.target.closest("[data-view-go]");if(go)setView(go.dataset.viewGo);const op=e.target.closest("[data-open]");if(op)setView(op.dataset.open)});
@@ -124,6 +124,43 @@ function renderTaxSummary(){
  };
 }
 
+
+function taxYears(){
+ return [...new Set(allRecords().map(r=>String(r.period||"").slice(0,4)).filter(y=>/^\d{4}$/.test(y)))].sort().reverse();
+}
+function annualTaxData(year){
+ const rate=num(state.tax?.rate)||.085,months=[];
+ let sTotal=0,wTotal=0,paidTotal=0,fileCount=0;
+ for(let m=1;m<=12;m++){
+   const period=`${year}-${String(m).padStart(2,"0")}`;
+   const s=rentForPeriod("spokojna",period),w=rentForPeriod("wroclawska",period),gross=s+w,due=gross*rate,paid=num(state.tax?.paidByPeriod?.[period]);
+   sTotal+=s;wTotal+=w;paidTotal+=paid;
+   months.push({period,s,w,gross,due,paid,diff:due-paid});
+ }
+ const gross=sTotal+wTotal,tax=gross*rate;
+ return {year,rate,months,sTotal,wTotal,gross,sTax:sTotal*rate,wTax:wTotal*rate,tax,sNet:sTotal*(1-rate),wNet:wTotal*(1-rate),net:gross-tax,paidTotal,diff:tax-paidTotal,fileCount};
+}
+function fillAnnualSummary(prefix,data){
+ $(prefix+"GrossTotal").textContent=PLN(data.gross);
+ $(prefix+"TaxTotal").textContent=PLN(data.tax);
+ $(prefix+"NetTotal").textContent=PLN(data.net);
+ $(prefix+"GrossSpokojna").textContent=PLN(data.sTotal);
+ $(prefix+"TaxSpokojna").textContent=PLN(data.sTax);
+ $(prefix+"NetSpokojna").textContent=PLN(data.sNet);
+ $(prefix+"GrossWroclawska").textContent=PLN(data.wTotal);
+ $(prefix+"TaxWroclawska").textContent=PLN(data.wTax);
+ $(prefix+"NetWroclawska").textContent=PLN(data.wNet);
+}
+function renderDashboardAnnual(){
+ const sel=$("dashTaxYear"),years=taxYears(),current=String(taxPeriod()).slice(0,4);
+ if(!sel.dataset.ready){
+   sel.innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join("");
+   sel.value=years.includes(current)?current:(years[0]||current);
+   sel.onchange=renderDashboardAnnual;sel.dataset.ready="1";
+ }
+ fillAnnualSummary("year",annualTaxData(sel.value||current));
+}
+
 function renderDashboard(){
  for(const apt of ["spokojna","wroclawska"]){
   const d=state.current[apt], cap=apt[0].toUpperCase()+apt.slice(1);
@@ -136,6 +173,7 @@ function renderDashboard(){
  const rec=allRecords().slice(-8).reverse();
  $("recentHistory").innerHTML=rec.flatMap(r=>["spokojna","wroclawska"].map(a=>({p:r.period,a,d:r[a]}))).filter(x=>x.d&&x.d.total).slice(0,8).map(x=>`<tr><td>${aptLabel(x.a)}</td><td>${periodPL(x.p)}</td><td>${PLN(x.d.rent)}</td><td>${PLN(num(x.d.total)-num(x.d.rent))}</td><td><b>${PLN(x.d.total)}</b></td></tr>`).join("");
  renderTaxSummary();
+ renderDashboardAnnual();
 }
 function renderApartment(apt){
  const el=$("view-"+apt), d=state.current[apt], cap=apt[0].toUpperCase()+apt.slice(1);
@@ -186,6 +224,156 @@ function renderHistory(){
 }
 
 
+
+
+const TAX_DB="KalkulatorNajmuTaxFiles",TAX_STORE="receipts";
+function taxDb(){
+ return new Promise((resolve,reject)=>{
+   const req=indexedDB.open(TAX_DB,1);
+   req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(TAX_STORE))db.createObjectStore(TAX_STORE,{keyPath:"id"})};
+   req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+ });
+}
+async function putTaxReceipt(period,file){
+ const db=await taxDb();
+ return new Promise((resolve,reject)=>{
+   const tx=db.transaction(TAX_STORE,"readwrite");
+   tx.objectStore(TAX_STORE).put({id:period,name:file.name,type:file.type||"application/octet-stream",size:file.size,updatedAt:Date.now(),blob:file});
+   tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);
+ });
+}
+async function getTaxReceipt(period){
+ const db=await taxDb();
+ return new Promise((resolve,reject)=>{
+   const req=db.transaction(TAX_STORE,"readonly").objectStore(TAX_STORE).get(period);
+   req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);
+ });
+}
+async function deleteTaxReceipt(period){
+ const db=await taxDb();
+ return new Promise((resolve,reject)=>{
+   const tx=db.transaction(TAX_STORE,"readwrite");tx.objectStore(TAX_STORE).delete(period);
+   tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);
+ });
+}
+async function yearTaxReceipts(year){
+ const db=await taxDb();
+ return new Promise((resolve,reject)=>{
+   const out=[],req=db.transaction(TAX_STORE,"readonly").objectStore(TAX_STORE).openCursor();
+   req.onsuccess=()=>{const c=req.result;if(c){if(String(c.value.id).startsWith(year+"-"))out.push(c.value);c.continue()}else resolve(out.sort((a,b)=>a.id.localeCompare(b.id)))};
+   req.onerror=()=>reject(req.error);
+ });
+}
+
+
+let taxUploadPeriod=null;
+function taxMonthShort(period){
+ const names=["sty","lut","mar","kwi","maj","cze","lip","sie","wrz","paź","lis","gru"];
+ const [y,m]=period.split("-");return `${names[Number(m)-1]}.${String(y).slice(2)}`;
+}
+async function renderTaxes(){
+ const years=taxYears(),sel=$("taxYear"),current=String(taxPeriod()).slice(0,4);
+ if(!sel.dataset.ready){
+   sel.innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join("");
+   sel.value=years.includes(current)?current:(years[0]||current);
+   sel.onchange=renderTaxes;sel.dataset.ready="1";
+   $("taxYearPdf").onclick=()=>downloadAnnualTaxPdf(sel.value);
+   $("taxYearZip").onclick=()=>downloadAccountantPackage(sel.value);
+   $("taxReceiptInput").onchange=async e=>{
+     const f=e.target.files?.[0];if(!f||!taxUploadPeriod)return;
+     await putTaxReceipt(taxUploadPeriod,f);e.target.value="";taxUploadPeriod=null;await renderTaxes();
+   };
+ }
+ const year=sel.value||current,data=annualTaxData(year),receipts=await yearTaxReceipts(year),rmap=new Map(receipts.map(r=>[r.id,r]));
+ fillAnnualSummary("taxYear",data);
+
+ $("taxYearBody").innerHTML=data.months.map(m=>{
+   const r=rmap.get(m.period),diff=m.diff;
+   return `<tr>
+    <td><b>${taxMonthShort(m.period)}</b></td>
+    <td>${PLN(m.s)}</td>
+    <td>${PLN(m.w)}</td>
+    <td><b>${PLN(m.gross)}</b></td>
+    <td>${PLN(m.due)}</td>
+    <td><input class="tax-paid-month" data-taxpaid="${m.period}" inputmode="decimal" value="${esc(val(m.paid))}"></td>
+    <td class="${diff>0.009?"tax-diff-due":"tax-diff-ok"}">${diff>0.009?"do zapłaty "+PLN(diff):diff<-0.009?"nadpłata "+PLN(Math.abs(diff)):"rozliczone"}</td>
+    <td>${r
+      ? `<div class="receipt-actions"><button class="receipt-name" data-receipt-open="${m.period}" title="${esc(r.name)}">📎 ${esc(r.name)}</button><button class="danger tiny" data-receipt-del="${m.period}">Usuń</button></div>`
+      : `<button class="ghost tiny" data-receipt-add="${m.period}">＋ Dodaj plik</button>`}</td>
+   </tr>`;
+ }).join("");
+
+ document.querySelectorAll("[data-taxpaid]").forEach(inp=>inp.onchange=e=>{
+   state.tax.paidByPeriod[e.target.dataset.taxpaid]=num(e.target.value);save();renderTaxes();renderDashboard();
+ });
+ document.querySelectorAll("[data-receipt-add]").forEach(b=>b.onclick=()=>{
+   taxUploadPeriod=b.dataset.receiptAdd;$("taxReceiptInput").click();
+ });
+ document.querySelectorAll("[data-receipt-open]").forEach(b=>b.onclick=async()=>{
+   const r=await getTaxReceipt(b.dataset.receiptOpen);if(!r)return;
+   const url=URL.createObjectURL(r.blob),a=document.createElement("a");a.href=url;a.download=r.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
+ });
+ document.querySelectorAll("[data-receipt-del]").forEach(b=>b.onclick=async()=>{
+   if(confirm("Usunąć to potwierdzenie wpłaty?")){await deleteTaxReceipt(b.dataset.receiptDel);renderTaxes()}
+ });
+
+ $("taxFootSpokojna").textContent=PLN(data.sTotal);$("taxFootWroclawska").textContent=PLN(data.wTotal);
+ $("taxFootGross").textContent=PLN(data.gross);$("taxFootDue").textContent=PLN(data.tax);
+ $("taxFootPaid").textContent=PLN(data.paidTotal);$("taxFootDiff").textContent=data.diff>0?"Do zapłaty "+PLN(data.diff):data.diff<0?"Nadpłata "+PLN(Math.abs(data.diff)):"Rozliczone";
+ $("taxFootFiles").textContent=`${receipts.length}/12 plików`;
+}
+function annualTaxPdfBlob(year){
+ if(!window.jspdf?.jsPDF)throw new Error("Moduł PDF nie został załadowany.");
+ const data=annualTaxData(year),{jsPDF}=window.jspdf,doc=new jsPDF({unit:"mm",format:"a4"});
+ doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text(`ROZLICZENIE NAJMU ${year}`,14,16);
+ doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("Zestawienie dla ksiegowej - ryczalt 8,5%",14,24);
+ doc.autoTable({startY:31,head:[["Podsumowanie","Brutto","Podatek 8,5%","Netto"]],body:[
+   ["RAZEM",pdfPLN(data.gross),pdfPLN(data.tax),pdfPLN(data.net)],
+   ["Spokojna",pdfPLN(data.sTotal),pdfPLN(data.sTax),pdfPLN(data.sNet)],
+   ["Wroclawska",pdfPLN(data.wTotal),pdfPLN(data.wTax),pdfPLN(data.wNet)]
+ ]});
+ const y=doc.lastAutoTable.finalY+9;
+ doc.autoTable({startY:y,head:[["Miesiac","Spokojna","Wroclawska","Razem","Podatek","Zaplacono","Roznica"]],body:data.months.map(m=>[
+   taxMonthShort(m.period),pdfPLN(m.s),pdfPLN(m.w),pdfPLN(m.gross),pdfPLN(m.due),pdfPLN(m.paid),pdfPLN(m.diff)
+ ])});
+ doc.setFontSize(9);doc.text(`Podatek zaplacony razem: ${pdfPLN(data.paidTotal)}`,14,doc.lastAutoTable.finalY+8);
+ doc.text(`Pozostalo / nadplata: ${pdfPLN(data.diff)}`,14,doc.lastAutoTable.finalY+14);
+ return doc.output("blob");
+}
+function downloadAnnualTaxPdf(year){
+ const blob=annualTaxPdfBlob(year),url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download=`Rozliczenie_najmu_${year}_dla_ksiegowej.pdf`;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+function annualTaxCsv(year){
+ const d=annualTaxData(year),lines=[["Miesiac","Spokojna brutto","Wroclawska brutto","Razem brutto","Podatek 8,5%","Zaplacono","Roznica"]];
+ for(const m of d.months)lines.push([taxMonthShort(m.period),m.s.toFixed(2),m.w.toFixed(2),m.gross.toFixed(2),m.due.toFixed(2),m.paid.toFixed(2),m.diff.toFixed(2)]);
+ lines.push(["RAZEM",d.sTotal.toFixed(2),d.wTotal.toFixed(2),d.gross.toFixed(2),d.tax.toFixed(2),d.paidTotal.toFixed(2),d.diff.toFixed(2)]);
+ return "\ufeff"+lines.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\r\n");
+}
+async function downloadAccountantPackage(year){
+ if(!window.JSZip){alert("Moduł ZIP nie został załadowany.");return}
+ const zip=new JSZip(),folder=zip.folder(`Rozliczenie_najmu_${year}`);
+ folder.file(`Rozliczenie_najmu_${year}.pdf`,annualTaxPdfBlob(year));
+ folder.file(`Rozliczenie_najmu_${year}.csv`,annualTaxCsv(year));
+ const receipts=await yearTaxReceipts(year),rf=folder.folder("Potwierdzenia_wplat_US");
+ for(const r of receipts){
+   const ext=(r.name.match(/\.[^.]+$/)||[""])[0],safe=`${r.id}_potwierdzenie${ext}`;
+   rf.file(safe,r.blob);
+ }
+ const manifest=[
+   `Rozliczenie najmu ${year}`,
+   `Liczba potwierdzen wplat US: ${receipts.length}/12`,
+   `Wygenerowano: ${new Date().toLocaleString("pl-PL")}`,
+   "",
+   "Zawartosc:",
+   "- Rozliczenie_najmu_"+year+".pdf",
+   "- Rozliczenie_najmu_"+year+".csv",
+   "- folder Potwierdzenia_wplat_US"
+ ].join("\r\n");
+ folder.file("README.txt",manifest);
+ const blob=await zip.generateAsync({type:"blob"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download=`Rozliczenie_najmu_${year}_dla_ksiegowej.zip`;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
 
 function addUnicodeTextImage(doc,text,x,y,opts={}){
  const scale=3,canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
@@ -267,7 +455,7 @@ function monthlySettlementPdfFile(apt){
 
  // Stopka
  doc.setTextColor(120,145,165); doc.setFont("helvetica","normal"); doc.setFontSize(8);
- doc.text("Kalkulator Najmu v2.0.5",x+7,y+224);
+ doc.text("Kalkulator Najmu v2.0.6",x+7,y+224);
 
  const blob=doc.output("blob"),safe=(aptLabel(apt)+"_"+(d.period||"rozliczenie")).replace(/\s+/g,"_");
  return new File([blob],`Rozliczenie_${safe}.pdf`,{type:"application/pdf"});

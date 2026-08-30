@@ -5,20 +5,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Kalkulator Najmu</title>
-<link rel="stylesheet" href="style.css?v=205">
+<link rel="stylesheet" href="style.css?v=206">
 </head>
 <body>
 <div class="app-shell">
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-icon">⌂</div>
-      <div><b>Kalkulator Najmu</b><span>v2.0.5</span></div>
+      <div><b>Kalkulator Najmu</b><span>v2.0.6</span></div>
     </div>
     <nav id="nav">
       <button class="nav-btn active" data-view="dashboard">⌂ <span>Pulpit</span></button>
       <button class="nav-btn" data-view="spokojna">▣ <span>Spokojna</span></button>
       <button class="nav-btn" data-view="wroclawska">▣ <span>Wrocławska</span></button>
       <button class="nav-btn" data-view="history">◷ <span>Historia wpłat</span></button>
+      <button class="nav-btn" data-view="taxes">％ <span>Podatki / księgowa</span></button>
       <button class="nav-btn" data-view="settlement">✓ <span>Rozliczenie końcowe</span></button>
       <button class="nav-btn" data-view="ads">▤ <span>Ogłoszenia</span></button>
       <button class="nav-btn" data-view="settings">⚙ <span>Ustawienia / dane</span></button>
@@ -29,7 +30,7 @@
   <main class="content">
     <header class="topbar">
       <div><h1 id="pageTitle">Pulpit</h1><p id="pageSub">Szybki przegląd obu mieszkań</p></div>
-      <div class="version-pill">Kalkulator Najmu • v2.0.5</div>
+      <div class="version-pill">Kalkulator Najmu • v2.0.6</div>
     </header>
 
     <section class="view active" id="view-dashboard">
@@ -100,6 +101,34 @@
         <p class="tax-note">Podatek jest liczony od samego przychodu z czynszu najmu, tak jak w arkuszu „Suma_wpłat”. Opłaty administracyjne, gaz, prąd i inne rozliczenia najemcy nie zwiększają tu podstawy.</p>
       </div>
 
+
+      <div class="annual-summary panel">
+        <div class="panel-head">
+          <div><h2>Podsumowanie roczne najmu</h2><p>Brutto • podatek 8,5% • netto</p></div>
+          <div class="actions">
+            <select id="dashTaxYear"></select>
+            <button class="ghost" data-view-go="taxes">Podatki / księgowa →</button>
+          </div>
+        </div>
+        <div class="annual-summary-grid">
+          <div class="annual-box total">
+            <span>RAZEM BRUTTO</span><b id="yearGrossTotal">0,00 zł</b>
+            <small>Podatek: <strong id="yearTaxTotal">0,00 zł</strong> • 8,50%</small>
+            <em>Razem netto <strong id="yearNetTotal">0,00 zł</strong></em>
+          </div>
+          <div class="annual-box spokojna">
+            <span>Spokojna brutto</span><b id="yearGrossSpokojna">0,00 zł</b>
+            <small>Podatek: <strong id="yearTaxSpokojna">0,00 zł</strong></small>
+            <em>Spokojna netto <strong id="yearNetSpokojna">0,00 zł</strong></em>
+          </div>
+          <div class="annual-box wroclawska">
+            <span>Wrocławska brutto</span><b id="yearGrossWroclawska">0,00 zł</b>
+            <small>Podatek: <strong id="yearTaxWroclawska">0,00 zł</strong></small>
+            <em>Wrocławska netto <strong id="yearNetWroclawska">0,00 zł</strong></em>
+          </div>
+        </div>
+      </div>
+
       <div class="quick-grid">
         <button class="quick" data-view-go="spokojna"><b>＋</b><span>Nowe rozliczenie</span><small>Spokojna</small></button>
         <button class="quick" data-view-go="wroclawska"><b>＋</b><span>Nowe rozliczenie</span><small>Wrocławska</small></button>
@@ -127,6 +156,81 @@
         </div>
         <div class="table-wrap history-table"><table><thead><tr><th>Miesiąc</th><th>Mieszkanie</th><th>Najemca</th><th>Czynsz</th><th>Administracja</th><th>Gaz</th><th>Prąd</th><th>Inne</th><th>Razem</th></tr></thead><tbody id="historyBody"></tbody></table></div>
       </div>
+    </section>
+
+
+    <section class="view" id="view-taxes">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Podatki / księgowa</h2>
+            <p>Roczne zestawienie przychodów i potwierdzeń wpłat do Urzędu Skarbowego</p>
+          </div>
+          <div class="actions">
+            <select id="taxYear"></select>
+            <button class="ghost" id="taxYearPdf">Pobierz zestawienie PDF</button>
+            <button class="primary" id="taxYearZip">Pobierz paczkę dla księgowej</button>
+          </div>
+        </div>
+
+        <div class="annual-summary-grid taxes-page">
+          <div class="annual-box total">
+            <span>RAZEM BRUTTO</span><b id="taxYearGrossTotal">0,00 zł</b>
+            <small>Podatek 8,5%: <strong id="taxYearTaxTotal">0,00 zł</strong></small>
+            <em>RAZEM NETTO <strong id="taxYearNetTotal">0,00 zł</strong></em>
+          </div>
+          <div class="annual-box spokojna">
+            <span>Spokojna brutto</span><b id="taxYearGrossSpokojna">0,00 zł</b>
+            <small>Spokojna podatek: <strong id="taxYearTaxSpokojna">0,00 zł</strong></small>
+            <em>Spokojna netto <strong id="taxYearNetSpokojna">0,00 zł</strong></em>
+          </div>
+          <div class="annual-box wroclawska">
+            <span>Wrocławska brutto</span><b id="taxYearGrossWroclawska">0,00 zł</b>
+            <small>Wrocławska podatek: <strong id="taxYearTaxWroclawska">0,00 zł</strong></small>
+            <em>Wrocławska netto <strong id="taxYearNetWroclawska">0,00 zł</strong></em>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div><h2>Miesięczne rozliczenie podatku</h2><p>Możesz dołączyć potwierdzenie wpłaty podatku do każdego miesiąca.</p></div>
+        </div>
+        <div class="table-wrap tax-year-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Miesiąc</th>
+                <th>Spokojna</th>
+                <th>Wrocławska</th>
+                <th>Razem brutto</th>
+                <th>Podatek 8,5%</th>
+                <th>Zapłacono</th>
+                <th>Różnica</th>
+                <th>Potwierdzenie US</th>
+              </tr>
+            </thead>
+            <tbody id="taxYearBody"></tbody>
+            <tfoot>
+              <tr>
+                <th>RAZEM</th>
+                <th id="taxFootSpokojna"></th>
+                <th id="taxFootWroclawska"></th>
+                <th id="taxFootGross"></th>
+                <th id="taxFootDue"></th>
+                <th id="taxFootPaid"></th>
+                <th id="taxFootDiff"></th>
+                <th id="taxFootFiles"></th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="tax-year-help">
+          <b>Paczka dla księgowej</b>
+          <span>Przycisk „Pobierz paczkę dla księgowej” tworzy jeden plik ZIP: zestawienie roczne PDF + CSV oraz wszystkie dołączone potwierdzenia wpłat podatku.</span>
+        </div>
+      </div>
+      <input id="taxReceiptInput" type="file" accept=".pdf,image/*" hidden>
     </section>
 
     <section class="view" id="view-settlement">
@@ -245,14 +349,15 @@
   </div>
 </div>
 
-<script src="apartments/spokojna.js?v=205"></script>
-<script src="apartments/wroclawska.js?v=205"></script>
-<script src="data/history-spokojna.js?v=205"></script>
-<script src="data/history-wroclawska.js?v=205"></script>
-<script src="data/tax.js?v=205"></script>
+<script src="apartments/spokojna.js?v=206"></script>
+<script src="apartments/wroclawska.js?v=206"></script>
+<script src="data/history-spokojna.js?v=206"></script>
+<script src="data/history-wroclawska.js?v=206"></script>
+<script src="data/tax.js?v=206"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
-<script src="app.js?v=205"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="app.js?v=206"></script>
 </body>
 </html>

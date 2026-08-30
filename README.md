@@ -1,30 +1,26 @@
-# Kalkulator Najmu v2.0.5
+# Kalkulator Najmu v2.0.6
 
-Nowość: podsumowanie najmu i podatku 8,5% na Pulpicie.
+Nowości:
+- roczne podsumowanie jak w pierwszej stronie starego arkusza:
+  - Razem brutto / podatek 8,5% / Razem netto,
+  - Spokojna brutto / podatek / netto,
+  - Wrocławska brutto / podatek / netto,
+- nowa sekcja `Podatki / księgowa`,
+- tabela 12 miesięcy z przychodem z obu mieszkań i podatkiem 8,5%,
+- dla każdego miesiąca można wpisać faktycznie zapłacony podatek,
+- dla każdego miesiąca można dołączyć potwierdzenie wpłaty do Urzędu Skarbowego (PDF lub zdjęcie),
+- potwierdzenia są przechowywane lokalnie w przeglądarce w IndexedDB,
+- `Pobierz zestawienie PDF` tworzy roczne zestawienie dla księgowej,
+- `Pobierz paczkę dla księgowej` tworzy ZIP zawierający:
+  - zestawienie roczne PDF,
+  - zestawienie CSV,
+  - wszystkie dołączone potwierdzenia wpłat US.
 
-Na podstawie arkusza `Suma_wpłat` z pliku `kalkulator wynajmu 2021.xlsm`:
-- osobno pokazuje przychód z czynszu Spokojnej,
-- osobno pokazuje przychód z czynszu Wrocławskiej,
-- sumuje oba przychody,
-- liczy podatek ryczałtowy 8,5%,
-- pokazuje kwotę po podatku,
-- pozwala wpisać podatek już zapłacony,
-- automatycznie pokazuje pozostałe `DO ZAPŁATY`, `ROZLICZONE` lub `NADPŁATA`.
+Ważne:
+- pliki potwierdzeń są zapisane lokalnie na tym urządzeniu/w tej przeglądarce; nie są wysyłane na GitHub.
+- jeżeli wyczyścisz dane przeglądarki, pliki mogą zostać usunięte. Dlatego na koniec roku warto pobrać paczkę ZIP jako kopię.
 
-Podstawa podatku w tym panelu to tylko czynsz najmu — zgodnie z logiką arkusza `Suma_wpłat`.
-Opłaty administracyjne, gaz, prąd i inne rozliczenia najemcy nie są dodawane do tej podstawy.
+Nowy zewnętrzny moduł: JSZip z CDN.
 
-Dodatkowo v2.0.5 migruje dane zapisane lokalnie z wcześniejszych wersji v2.0.0–v2.0.4.
-
-Struktura:
-- index.html
-- style.css
-- app.js
-- apartments/spokojna.js
-- apartments/wroclawska.js
-- data/history-spokojna.js
-- data/history-wroclawska.js
-- data/tax.js
-
-Po publikacji:
-https://mexilianpl.github.io/Rozliczanie-najmu/?v=2050830
+Link po publikacji:
+https://mexilianpl.github.io/Rozliczanie-najmu/?v=2060830

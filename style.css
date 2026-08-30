@@ -48,3 +48,20 @@ nav{display:grid;gap:5px}.nav-btn{border:0;background:transparent;color:#bac8d8;
 .tax-paid-label input{font-size:20px;font-weight:700;margin-top:8px;padding:8px 10px}
 .tax-note{font-size:10px!important;margin-top:10px!important;color:#71879b!important}
 @media(max-width:900px){.tax-kpis,.tax-settlement{grid-template-columns:1fr}}
+
+.annual-summary{margin-top:16px}.annual-summary-grid{display:grid;grid-template-columns:1.08fr 1fr 1fr;gap:11px}
+.annual-box{border:1px solid #2c4558;border-radius:12px;padding:15px;background:#0b1a28}
+.annual-box span,.annual-box b,.annual-box small,.annual-box em{display:block}.annual-box span{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#9cb1c5}
+.annual-box>b{font-size:23px;margin:7px 0}.annual-box small{padding-top:8px;border-top:1px solid #263d50;color:#ef8e70}
+.annual-box em{margin-top:9px;padding:9px 10px;border-radius:7px;background:#133b2f;color:#78e7a0;font-style:normal}
+.annual-box.total{background:linear-gradient(135deg,#102b45,#153752)}.annual-box.total>b{color:#8ecfff}
+.annual-box.spokojna{border-top:3px solid #31bcb3}.annual-box.wroclawska{border-top:3px solid #9277ea}
+.taxes-page{margin-top:15px}
+.tax-year-table input.tax-paid-month{min-width:100px;width:110px;padding:7px 8px}
+.tax-diff-due{color:#ff9696;font-weight:700}.tax-diff-ok{color:#67dfa0;font-weight:700}
+.receipt-actions{display:flex;gap:5px;align-items:center;min-width:180px}.receipt-name{border:0;background:transparent;color:#83cfff;text-decoration:underline;cursor:pointer;max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button.tiny{padding:6px 8px;font-size:10px}
+.tax-year-help{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:12px;border-radius:10px;background:#0b1a28;border:1px solid #294154;color:#9db2c6}
+.tax-year-help b{color:#eef6ff;white-space:nowrap}
+#view-taxes .panel-head select,#dashTaxYear{min-width:90px}
+@media(max-width:900px){.annual-summary-grid{grid-template-columns:1fr}.tax-year-help{display:block}.tax-year-help b{display:block;margin-bottom:5px}}
