@@ -1,13 +1,12 @@
-# Rozliczanie najmu v1.2
+# Rozliczanie najmu v1.3
 
-Poprawka pól liczbowych:
-- usunięto strzałki góra/dół z pól liczbowych,
-- pola kwot, ilości, stanów liczników, stawek i zaliczek są teraz zwykłymi polami tekstowymi z klawiaturą numeryczną,
-- można wpisywać liczby z przecinkiem, np. 2,03; 62,33; 10,619,
-- wpisywanie i kasowanie nie powoduje utraty kursora,
-- obliczenia nadal aktualizują się na bieżąco.
+Ta wersja naprawia dwa problemy:
+1. Wszystkie edytowane pola liczbowe są `type="text"` z `inputmode="decimal"` — nie mają strzałek góra/dół.
+2. `index.html` ładuje `app.js?v=13` i `style.css?v=13`, dzięki czemu GitHub Pages nie powinien podawać starej wersji plików z cache.
 
-Podmień na GitHubie:
+Pola nie są przebudowywane podczas wpisywania, więc kursor pozostaje w aktywnym polu.
+
+Podmień na GitHubie wszystkie trzy pliki:
 - index.html
 - style.css
 - app.js

@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Rozliczenie końcowe najmu</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <main>
@@ -26,7 +29,7 @@
   <label>Najemca<input id="najemca"></label>
   <label>Od kiedy liczyć zaliczki<input id="od" type="date"></label>
   <label>Do kiedy liczyć zaliczki<input id="do" type="date"></label>
-  <label>Liczba miesięcy zaliczek<input id="mies" type="number" min="0" step="1"></label>
+  <label>Liczba miesięcy zaliczek<input id="mies" type="text" inputmode="decimal"></label>
 </div>
 </section>
 
@@ -106,6 +109,6 @@
   <button id="clearData" class="danger">Wyczyść dane</button>
 </section>
 </main>
-<script src="app.js"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const K="rozliczenie-v12";
+const K="rozliczenie-v13";
 const base={
   lokal:"Wrocławska 53A/42",najemca:"",
   od:"2026-03-01",do:"2026-08-31",mies:6,
@@ -241,7 +241,7 @@ $("clearData").onclick=()=>{
 $("export").onclick=()=>{
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));
-  a.download="rozliczenie-najmu-v11.json";
+  a.download="rozliczenie-najmu-v13.json";
   a.click();
 };
 

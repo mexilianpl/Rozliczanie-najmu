@@ -25,3 +25,8 @@ tfoot th{font-weight:800;color:#142236}.cards{display:grid;grid-template-columns
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 input[type=number]{-moz-appearance:textfield}
+
+/* v1.3: pola kwot/odczytów są tekstowe — bez strzałek/spinnerów */
+input[type="number"]{-moz-appearance:textfield!important;appearance:textfield!important}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none!important;appearance:none!important;margin:0!important}
