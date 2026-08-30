@@ -1,4 +1,4 @@
-const K="rozliczenie-v14";
+const K="rozliczenie-v15";
 const base={
   lokal:"Wrocławska 53A/42",najemca:"",
   od:"2026-03-01",do:"2026-08-31",mies:6,
@@ -241,7 +241,7 @@ $("clearData").onclick=()=>{
 $("export").onclick=()=>{
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));
-  a.download="rozliczenie-najmu-v14.json";
+  a.download="rozliczenie-najmu-v15.json";
   a.click();
 };
 
@@ -350,18 +350,118 @@ function buildPdfReport(){
 }
 
 $("downloadPdf").onclick=()=>{
-  buildPdfReport();
-  document.body.classList.add("pdf-mode");
-  const oldTitle=document.title;
-  document.title=`Rozliczenie_${(d.najemca||"najem").replace(/[^\p{L}\p{N}_-]+/gu,"_")}`;
-  const cleanup=()=>{
-    document.body.classList.remove("pdf-mode");
-    document.title=oldTitle;
-    window.removeEventListener("afterprint",cleanup);
-  };
-  window.addEventListener("afterprint",cleanup);
-  window.print();
-  setTimeout(()=>{ if(document.body.classList.contains("pdf-mode")) cleanup(); },3000);
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    alert("Nie udało się załadować modułu PDF. Sprawdź połączenie z internetem i spróbuj ponownie.");
+    return;
+  }
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+  const r=mediaRows();
+  const koszt=r.reduce((a,m)=>a+m.cost,0);
+  const zal=r.reduce((a,m)=>a+m.adv*n(d.mies),0);
+  const wynik=zal-koszt;
+  const ext=extraTotal();
+  const fin=n(d.kaucja)+wynik-ext;
+
+  const pl=x=>money(x).replace(/\u00a0/g," ");
+  const safe=x=>String(x??"");
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(18);
+  doc.text("ROZLICZENIE KONCOWE NAJMU",14,16);
+
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10);
+  doc.text(`Lokal: ${safe(d.lokal)}`,14,24);
+  doc.text(`Najemca: ${safe(d.najemca)}`,14,30);
+  doc.text(`Okres zaliczek: ${safe(d.od)} - ${safe(d.do)}`,14,36);
+  doc.text(`Liczba miesiecy: ${safe(d.mies)}`,14,42);
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.text("Odczyty licznikow",14,52);
+
+  doc.autoTable({
+    startY:56,
+    head:[["Licznik","Stan bazowy","Stan koncowy","Zuzycie"]],
+    body:[
+      ["Zimna woda",safe(d.zwStart),safe(d.zwEnd),`${num(zw())} m3`],
+      ["Ciepla woda",safe(d.cwStart),safe(d.cwEnd),`${num(cw())} m3`],
+      ["Ogrzewanie",safe(d.coStart),safe(d.coEnd),`${num(co())} GJ`]
+    ],
+    styles:{font:"helvetica",fontSize:9},
+    headStyles:{fontStyle:"bold"}
+  });
+
+  let y=doc.lastAutoTable.finalY+9;
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.text("Rozliczenie mediow",14,y);
+
+  const mediaBody=r.map(m=>{
+    const adv=m.adv*n(d.mies);
+    const diff=adv-m.cost;
+    return [m.n,m.desc,pl(m.cost),pl(adv),(diff>=0?"zwrot ":"doplata ")+pl(Math.abs(diff))];
+  });
+
+  doc.autoTable({
+    startY:y+4,
+    head:[["Pozycja","Podstawa","Koszt","Zaliczki","Wynik"]],
+    body:mediaBody,
+    foot:[["RAZEM","",pl(koszt),pl(zal),(wynik>=0?"zwrot ":"doplata ")+pl(Math.abs(wynik))]],
+    styles:{font:"helvetica",fontSize:8,cellPadding:2},
+    headStyles:{fontStyle:"bold"},
+    footStyles:{fontStyle:"bold"},
+    columnStyles:{0:{cellWidth:39},1:{cellWidth:55},2:{cellWidth:28},3:{cellWidth:28},4:{cellWidth:34}}
+  });
+
+  y=doc.lastAutoTable.finalY+9;
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.text("Dodatkowe koszty / potracenia",14,y);
+
+  const extrasBody=d.extras.length
+    ? d.extras.map(x=>[safe(x.name),safe(x.qty),pl(n(x.price)),pl(n(x.qty)*n(x.price))])
+    : [["Brak dodatkowych kosztow","","",""]];
+
+  doc.autoTable({
+    startY:y+4,
+    head:[["Pozycja","Ilosc","Cena jednostkowa","Razem"]],
+    body:extrasBody,
+    foot:[["SUMA","","",pl(ext)]],
+    styles:{font:"helvetica",fontSize:9},
+    headStyles:{fontStyle:"bold"},
+    footStyles:{fontStyle:"bold"}
+  });
+
+  y=doc.lastAutoTable.finalY+9;
+  if(y>245){doc.addPage();y=18}
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.text("Podsumowanie",14,y);
+
+  doc.autoTable({
+    startY:y+4,
+    body:[
+      ["Kaucja",pl(d.kaucja)],
+      ["Rozliczenie mediow",(wynik>=0?"+ ":"- ")+pl(Math.abs(wynik))],
+      ["Dodatkowe koszty","- "+pl(ext)]
+    ],
+    styles:{font:"helvetica",fontSize:10},
+    columnStyles:{0:{fontStyle:"bold"}},
+    theme:"grid"
+  });
+
+  y=doc.lastAutoTable.finalY+10;
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(15);
+  doc.text(fin>=0?"DO ZWROTU NAJEMCY":"NAJEMCA DOPLACA",14,y);
+  doc.text(pl(Math.abs(fin)),196,y,{align:"right"});
+
+  const name=(d.najemca||"najem").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9_-]+/g,"_");
+  doc.save(`Rozliczenie_${name}.pdf`);
 }
 
 fillStaticInputs();
