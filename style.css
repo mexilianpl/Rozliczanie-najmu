@@ -30,3 +30,22 @@ input[type=number]{-moz-appearance:textfield}
 input[type="number"]{-moz-appearance:textfield!important;appearance:textfield!important}
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none!important;appearance:none!important;margin:0!important}
+
+.pdf-report{display:none}
+@media print{
+  body.pdf-mode main>header,
+  body.pdf-mode main>section,
+  body.pdf-mode main>.cards{display:none!important}
+  body.pdf-mode #pdfReport{display:block!important}
+  body.pdf-mode{background:#fff}
+  body.pdf-mode main{max-width:none;padding:0}
+  .pdf-doc{font-family:Arial,sans-serif;color:#111;padding:8mm}
+  .pdf-doc h1{font-size:22px;margin:0 0 5px}
+  .pdf-doc h2{font-size:16px;margin:18px 0 8px}
+  .pdf-doc .meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 20px;margin:12px 0}
+  .pdf-doc table{min-width:0;width:100%;border-collapse:collapse}
+  .pdf-doc th,.pdf-doc td{border:1px solid #bbb;padding:6px;font-size:11px}
+  .pdf-doc th{background:#f2f2f2}
+  .pdf-doc .final-box{margin-top:16px;border:2px solid #111;padding:12px;font-size:18px;font-weight:700;display:flex;justify-content:space-between}
+  .pdf-doc .green{color:#087a3b}.pdf-doc .red{color:#b42318}
+}

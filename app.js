@@ -1,4 +1,4 @@
-const K="rozliczenie-v13";
+const K="rozliczenie-v14";
 const base={
   lokal:"Wrocławska 53A/42",najemca:"",
   od:"2026-03-01",do:"2026-08-31",mies:6,
@@ -241,9 +241,128 @@ $("clearData").onclick=()=>{
 $("export").onclick=()=>{
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));
-  a.download="rozliczenie-najmu-v13.json";
+  a.download="rozliczenie-najmu-v14.json";
   a.click();
 };
+
+
+function applyImportedData(obj){
+  if(!obj || typeof obj!=="object" || Array.isArray(obj)) throw new Error("Nieprawidłowy plik JSON.");
+  const next=structuredClone(base);
+  ["lokal","najemca","od","do","mies","zwStart","zwEnd","cwStart","cwEnd","coStart","coEnd","kaucja"].forEach(k=>{
+    if(Object.prototype.hasOwnProperty.call(obj,k)) next[k]=obj[k];
+  });
+  if(obj.stawki && typeof obj.stawki==="object"){
+    ["wodaScieki","podgrzanie","co"].forEach(k=>{if(Object.prototype.hasOwnProperty.call(obj.stawki,k)) next.stawki[k]=obj.stawki[k]});
+  }
+  if(obj.zaliczki && typeof obj.zaliczki==="object"){
+    ["wodaScieki","podgrzanie","co"].forEach(k=>{if(Object.prototype.hasOwnProperty.call(obj.zaliczki,k)) next.zaliczki[k]=obj.zaliczki[k]});
+  }
+  next.extras=Array.isArray(obj.extras)?obj.extras.map(x=>({
+    name:String(x?.name??""),
+    qty:x?.qty??1,
+    price:x?.price??0
+  })):[];
+  d=next;
+  save();
+  fillStaticInputs();
+  buildMediaTable();
+  buildExtras();
+  recalc();
+}
+
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];
+  if(!file) return;
+  try{
+    const obj=JSON.parse(await file.text());
+    applyImportedData(obj);
+    alert("Dane zostały zaimportowane.");
+  }catch(err){
+    alert("Nie udało się zaimportować pliku JSON: "+err.message);
+  }finally{
+    e.target.value="";
+  }
+});
+
+function escapeHtml(s){
+  return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function buildPdfReport(){
+  const r=mediaRows();
+  const koszt=r.reduce((a,m)=>a+m.cost,0);
+  const zal=r.reduce((a,m)=>a+m.adv*n(d.mies),0);
+  const wynik=zal-koszt;
+  const ext=extraTotal();
+  const fin=n(d.kaucja)+wynik-ext;
+
+  const mediaHtml=r.map(m=>{
+    const advTotal=m.adv*n(d.mies);
+    const diff=advTotal-m.cost;
+    return `<tr>
+      <td>${escapeHtml(m.n)}</td>
+      <td>${escapeHtml(m.desc)}</td>
+      <td>${money(m.cost)}</td>
+      <td>${money(advTotal)}</td>
+      <td>${diff>=0?"zwrot ":"dopłata "}${money(Math.abs(diff))}</td>
+    </tr>`;
+  }).join("");
+
+  const extrasHtml=d.extras.length?d.extras.map(x=>`<tr>
+    <td>${escapeHtml(x.name)}</td><td>${escapeHtml(x.qty)}</td><td>${money(n(x.price))}</td><td>${money(n(x.qty)*n(x.price))}</td>
+  </tr>`).join(""):`<tr><td colspan="4">Brak dodatkowych kosztów</td></tr>`;
+
+  $("pdfReport").innerHTML=`<div class="pdf-doc">
+    <h1>Rozliczenie końcowe najmu</h1>
+    <div class="meta">
+      <div><b>Lokal:</b> ${escapeHtml(d.lokal)}</div>
+      <div><b>Najemca:</b> ${escapeHtml(d.najemca)}</div>
+      <div><b>Okres zaliczek:</b> ${escapeHtml(d.od)} – ${escapeHtml(d.do)}</div>
+      <div><b>Liczba miesięcy:</b> ${escapeHtml(d.mies)}</div>
+    </div>
+
+    <h2>Odczyty liczników</h2>
+    <table><thead><tr><th>Licznik</th><th>Stan bazowy</th><th>Stan końcowy</th><th>Zużycie</th></tr></thead><tbody>
+      <tr><td>Zimna woda</td><td>${escapeHtml(d.zwStart)}</td><td>${escapeHtml(d.zwEnd)}</td><td>${num(zw())} m³</td></tr>
+      <tr><td>Ciepła woda</td><td>${escapeHtml(d.cwStart)}</td><td>${escapeHtml(d.cwEnd)}</td><td>${num(cw())} m³</td></tr>
+      <tr><td>Ogrzewanie</td><td>${escapeHtml(d.coStart)}</td><td>${escapeHtml(d.coEnd)}</td><td>${num(co())} GJ</td></tr>
+    </tbody></table>
+
+    <h2>Rozliczenie mediów</h2>
+    <table><thead><tr><th>Pozycja</th><th>Podstawa</th><th>Koszt</th><th>Zaliczki</th><th>Wynik</th></tr></thead>
+    <tbody>${mediaHtml}</tbody>
+    <tfoot><tr><th colspan="2">RAZEM</th><th>${money(koszt)}</th><th>${money(zal)}</th><th>${wynik>=0?"zwrot ":"dopłata "}${money(Math.abs(wynik))}</th></tr></tfoot></table>
+
+    <h2>Dodatkowe koszty / potrącenia</h2>
+    <table><thead><tr><th>Pozycja</th><th>Ilość</th><th>Cena</th><th>Razem</th></tr></thead><tbody>${extrasHtml}</tbody>
+    <tfoot><tr><th colspan="3">SUMA</th><th>${money(ext)}</th></tr></tfoot></table>
+
+    <h2>Podsumowanie</h2>
+    <table><tbody>
+      <tr><td>Kaucja</td><td>${money(d.kaucja)}</td></tr>
+      <tr><td>Rozliczenie mediów</td><td>${wynik>=0?"+ ":"- "}${money(Math.abs(wynik))}</td></tr>
+      <tr><td>Dodatkowe koszty</td><td>- ${money(ext)}</td></tr>
+    </tbody></table>
+    <div class="final-box ${fin>=0?"green":"red"}"><span>${fin>=0?"DO ZWROTU NAJEMCY":"NAJEMCA DOPŁACA"}</span><span>${money(Math.abs(fin))}</span></div>
+  </div>`;
+}
+
+$("downloadPdf").onclick=()=>{
+  buildPdfReport();
+  document.body.classList.add("pdf-mode");
+  const oldTitle=document.title;
+  document.title=`Rozliczenie_${(d.najemca||"najem").replace(/[^\p{L}\p{N}_-]+/gu,"_")}`;
+  const cleanup=()=>{
+    document.body.classList.remove("pdf-mode");
+    document.title=oldTitle;
+    window.removeEventListener("afterprint",cleanup);
+  };
+  window.addEventListener("afterprint",cleanup);
+  window.print();
+  setTimeout(()=>{ if(document.body.classList.contains("pdf-mode")) cleanup(); },3000);
+}
 
 fillStaticInputs();
 buildMediaTable();

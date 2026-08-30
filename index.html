@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Rozliczenie końcowe najmu</title>
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 <main>
@@ -106,9 +106,13 @@
 <section class="buttons no-print">
   <button id="save" class="primary">Zapisz dane</button>
   <button id="export">Eksport JSON</button>
+  <button id="importBtn">Import JSON</button>
+  <input id="importFile" type="file" accept=".json,application/json" hidden>
+  <button id="downloadPdf" class="primary">Pobierz PDF</button>
   <button id="clearData" class="danger">Wyczyść dane</button>
 </section>
+<div id="pdfReport" class="pdf-report"></div>
 </main>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>
