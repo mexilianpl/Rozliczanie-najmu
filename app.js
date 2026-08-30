@@ -1,4 +1,4 @@
-const K="rozliczenie-v11";
+const K="rozliczenie-v12";
 const base={
   lokal:"Wrocławska 53A/42",najemca:"",
   od:"2026-03-01",do:"2026-08-31",mies:6,
@@ -21,7 +21,17 @@ if(!Array.isArray(d.extras)) d.extras=structuredClone(base.extras);
 const $=id=>document.getElementById(id);
 const money=x=>new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN"}).format(+x||0);
 const num=x=>new Intl.NumberFormat("pl-PL",{maximumFractionDigits:3}).format(+x||0);
-const n=x=>Number(x)||0;
+const parseNum=x=>{
+  if(typeof x==="number") return Number.isFinite(x)?x:0;
+  const s=String(x??"").trim().replace(/\s/g,"").replace(",",".");
+  const v=Number(s);
+  return Number.isFinite(v)?v:0;
+};
+const n=parseNum;
+const editVal=x=>{
+  if(x===null||x===undefined||x==="") return "";
+  return String(x).replace(".",",");
+};
 
 function save(){localStorage.setItem(K,JSON.stringify(d))}
 function zw(){return Math.max(0,n(d.zwEnd)-n(d.zwStart))}
@@ -49,18 +59,18 @@ function buildMediaTable(){
       <td><b>${r.name}</b></td>
       <td><span class="formula" id="desc_${r.key}"></span><span class="muted" id="sub_${r.key}"></span></td>
       <td>
-        <input id="stawka_${r.key}" type="number" step=".01">
+        <input id="stawka_${r.key}" type="text" inputmode="decimal">
         <span class="muted">${r.unit}</span>
       </td>
       <td><b id="cost_${r.key}"></b></td>
-      <td><input id="zal_${r.key}" type="number" step=".01"></td>
+      <td><input id="zal_${r.key}" type="text" inputmode="decimal"></td>
       <td><b id="adv_${r.key}"></b></td>
       <td id="diff_${r.key}"></td>
     </tr>`).join("");
 
   ["wodaScieki","podgrzanie","co"].forEach(k=>{
-    $(`stawka_${k}`).value=d.stawki[k]??0;
-    $(`zal_${k}`).value=d.zaliczki[k]??0;
+    $(`stawka_${k}`).value=editVal(d.stawki[k]??0);
+    $(`zal_${k}`).value=editVal(d.zaliczki[k]??0);
 
     $(`stawka_${k}`).addEventListener("input",e=>{
       d.stawki[k]=e.target.value;
@@ -79,8 +89,8 @@ function buildExtras(){
   $("extras").innerHTML=d.extras.map((x,i)=>`
     <tr>
       <td><input id="extra_name_${i}" value="${String(x.name??"").replace(/"/g,"&quot;")}"></td>
-      <td><input id="extra_qty_${i}" type="number" step=".01" min="0" value="${x.qty??0}"></td>
-      <td><input id="extra_price_${i}" type="number" step=".01" min="0" value="${x.price??0}"></td>
+      <td><input id="extra_qty_${i}" type="text" inputmode="decimal" value="${editVal(x.qty??0)}"></td>
+      <td><input id="extra_price_${i}" type="text" inputmode="decimal" value="${editVal(x.price??0)}"></td>
       <td><b id="extra_total_${i}">${money(n(x.qty)*n(x.price))}</b></td>
       <td class="no-print"><button class="remove" data-remove="${i}">Usuń</button></td>
     </tr>`).join("");
@@ -166,8 +176,9 @@ function recalc(){
 }
 
 function fillStaticInputs(){
-  ["lokal","najemca","od","do","mies","zwStart","zwEnd","cwStart","cwEnd","coStart","coEnd","kaucja"].forEach(k=>{
-    $(k).value=d[k]??"";
+  ["lokal","najemca","od","do"].forEach(k=>{$(k).value=d[k]??""});
+  ["mies","zwStart","zwEnd","cwStart","cwEnd","coStart","coEnd","kaucja"].forEach(k=>{
+    $(k).value=editVal(d[k]??"");
   });
 }
 
@@ -239,3 +250,7 @@ buildMediaTable();
 buildExtras();
 bindStaticInputs();
 recalc();
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter" && e.target && e.target.tagName==="INPUT") e.preventDefault();
+});

@@ -36,9 +36,9 @@
 <table>
 <thead><tr><th>Licznik</th><th>Stan bazowy</th><th>Stan końcowy</th><th>Zużycie</th></tr></thead>
 <tbody>
-<tr><td><b>Zimna woda</b></td><td><input id="zwStart" type="number" step=".001"></td><td><input id="zwEnd" type="number" step=".001"></td><td id="zwZuzycie"></td></tr>
-<tr><td><b>Ciepła woda</b></td><td><input id="cwStart" type="number" step=".001"></td><td><input id="cwEnd" type="number" step=".001"></td><td id="cwZuzycie"></td></tr>
-<tr><td><b>Ogrzewanie</b></td><td><input id="coStart" type="number" step=".001"></td><td><input id="coEnd" type="number" step=".001"></td><td id="coZuzycie"></td></tr>
+<tr><td><b>Zimna woda</b></td><td><input id="zwStart" type="text" inputmode="decimal"></td><td><input id="zwEnd" type="text" inputmode="decimal"></td><td id="zwZuzycie"></td></tr>
+<tr><td><b>Ciepła woda</b></td><td><input id="cwStart" type="text" inputmode="decimal"></td><td><input id="cwEnd" type="text" inputmode="decimal"></td><td id="cwZuzycie"></td></tr>
+<tr><td><b>Ogrzewanie</b></td><td><input id="coStart" type="text" inputmode="decimal"></td><td><input id="coEnd" type="text" inputmode="decimal"></td><td id="coZuzycie"></td></tr>
 </tbody>
 </table>
 </div>
@@ -90,7 +90,7 @@
 <section>
 <h2>Kaucja i końcowe podsumowanie</h2>
 <div class="grid one">
-  <label>Kaucja<input id="kaucja" type="number" step=".01"></label>
+  <label>Kaucja<input id="kaucja" type="text" inputmode="decimal"></label>
 </div>
 <div class="sum">
   <div>Kaucja <b id="fk"></b></div>
