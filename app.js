@@ -1,4 +1,4 @@
-const K="rozliczenie-v07";
+const K="rozliczenie-v08";
 const base={
   lokal:"Wrocławska 53A/42",najemca:"",
   od:"2026-03-01",do:"2026-08-31",mies:6,
@@ -47,7 +47,13 @@ function render(){
 }
 window.editStawka=(k,v)=>{d.stawki[k]=+v;save();render()};window.editZal=(k,v)=>{d.zaliczki[k]=+v;save();render()};
 window.editExtra=(i,k,v)=>{d.extras[i][k]=(k==="name"?v:+v);save();render()};window.removeExtra=i=>{d.extras.splice(i,1);save();render()};
-$("addExtra").onclick=()=>{d.extras.push({name:"",qty:1,price:0});save();render()};
+function addExtraRow(){
+  d.extras.push({name:"",qty:1,price:0});
+  save();
+  render();
+}
+$("addExtra").onclick=addExtraRow;
+$("addExtraTop").onclick=addExtraRow;
 ["lokal","najemca","od","do"].forEach(k=>$(k).oninput=e=>{d[k]=e.target.value;save()});
 ["mies","zwStart","zwEnd","cwStart","cwEnd","coStart","coEnd","kaucja"].forEach(k=>$(k).oninput=e=>{d[k]=+e.target.value;save();render()});
 $("save").onclick=()=>{save();alert("Dane zapisane.")};$("reset").onclick=()=>{if(confirm("Przywrócić dane przykładowe?")){d=structuredClone(base);save();render()}};

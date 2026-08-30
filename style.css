@@ -14,3 +14,10 @@ tfoot th{font-weight:800;color:#142236}.cards{display:grid;grid-template-columns
 @media(max-width:560px){header{flex-direction:column;align-items:flex-start}.grid,.grid.one{grid-template-columns:1fr}}
 @media print{header button,.no-print{display:none!important}.table{overflow:visible}table{min-width:0}main{padding:0}section,article{box-shadow:none}.explain{grid-template-columns:1fr 1fr}}
 .danger{background:#fff;color:#b42318;border-color:#e4bcbc}.danger:hover{background:#fff5f5}
+
+.section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:10px}
+.section-head h2{margin-bottom:4px}.section-head .hint{margin:0}
+#extras td:nth-child(1){min-width:280px}
+#extras td:nth-child(2),#extras td:nth-child(3){min-width:150px}
+#extrasTotal{font-size:16px}
+@media(max-width:650px){.section-head{flex-direction:column}.section-head button{width:100%}}
