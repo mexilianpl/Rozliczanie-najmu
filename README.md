@@ -1,18 +1,12 @@
-# Rozliczanie najmu v1.0
+# Rozliczanie najmu v1.1
 
-Poprawka wpisywania we wszystkich polach liczbowych.
+Pełna poprawka problemu z utratą kursora.
 
-Naprawiono ten sam problem, który występował wcześniej w tabeli dodatkowych kosztów:
-- stany bazowe liczników,
-- stany końcowe liczników,
-- liczba miesięcy,
-- kaucja,
-- stawki,
-- zaliczki miesięczne.
-
-Formularz nie jest już odświeżany w całości po każdym wpisanym znaku, więc można normalnie wpisać np. 62,33 albo 10619 bez utraty kursora.
-
-Wyliczenia nadal aktualizują się na bieżąco.
+Najważniejsza zmiana:
+- żadne pole edytowane przez użytkownika nie jest już tworzone ponownie podczas pisania,
+- można normalnie wpisywać i kasować wiele znaków/cyfr,
+- dotyczy odczytów liczników, stawek, zaliczek, kaucji oraz dodatkowych kosztów,
+- wyniki nadal aktualizują się na bieżąco.
 
 Podmień na GitHubie:
 - index.html
