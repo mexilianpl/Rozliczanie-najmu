@@ -4,117 +4,189 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<title>Rozliczenie końcowe najmu</title>
-<link rel="stylesheet" href="style.css?v=15">
+<title>Kalkulator Najmu</title>
+<link rel="stylesheet" href="style.css?v=200">
 </head>
 <body>
-<main>
-<header>
-  <div>
-    <h1>Rozliczenie końcowe najmu</h1>
-    <p>Media, kaucja i dodatkowe koszty</p>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">⌂</div>
+      <div><b>Kalkulator Najmu</b><span>v2.0.0</span></div>
+    </div>
+    <nav id="nav">
+      <button class="nav-btn active" data-view="dashboard">⌂ <span>Pulpit</span></button>
+      <button class="nav-btn" data-view="spokojna">▣ <span>Spokojna</span></button>
+      <button class="nav-btn" data-view="wroclawska">▣ <span>Wrocławska</span></button>
+      <button class="nav-btn" data-view="history">◷ <span>Historia wpłat</span></button>
+      <button class="nav-btn" data-view="settlement">✓ <span>Rozliczenie końcowe</span></button>
+      <button class="nav-btn" data-view="ads">▤ <span>Ogłoszenia</span></button>
+      <button class="nav-btn" data-view="settings">⚙ <span>Ustawienia / dane</span></button>
+    </nav>
+    <div class="sidebar-foot">Dane zapisują się lokalnie w tej przeglądarce.</div>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div><h1 id="pageTitle">Pulpit</h1><p id="pageSub">Szybki przegląd obu mieszkań</p></div>
+      <div class="version-pill">Kalkulator Najmu • v2.0.0</div>
+    </header>
+
+    <section class="view active" id="view-dashboard">
+      <div class="apartment-grid">
+        <article class="apartment-card teal" data-open="spokojna">
+          <div class="apt-photo" id="dashPhotoSpokojna"><span>Spokojna</span></div>
+          <div class="apt-body">
+            <div class="apt-title"><div><h2>SPOKOJNA</h2><small id="dashPeriodSpokojna"></small></div><span class="status">Bieżące</span></div>
+            <div class="money-lines" id="dashLinesSpokojna"></div>
+            <div class="big-total"><span>RAZEM DO WPŁATY</span><b id="dashTotalSpokojna"></b></div>
+            <button class="open-btn" data-open="spokojna">Otwórz rozliczenie</button>
+          </div>
+        </article>
+        <article class="apartment-card violet" data-open="wroclawska">
+          <div class="apt-photo" id="dashPhotoWroclawska"><span>Wrocławska</span></div>
+          <div class="apt-body">
+            <div class="apt-title"><div><h2>WROCŁAWSKA</h2><small id="dashPeriodWroclawska"></small></div><span class="status">Bieżące</span></div>
+            <div class="money-lines" id="dashLinesWroclawska"></div>
+            <div class="big-total"><span>RAZEM DO WPŁATY</span><b id="dashTotalWroclawska"></b></div>
+            <button class="open-btn" data-open="wroclawska">Otwórz rozliczenie</button>
+          </div>
+        </article>
+      </div>
+
+      <div class="quick-grid">
+        <button class="quick" data-view-go="spokojna"><b>＋</b><span>Nowe rozliczenie</span><small>Spokojna</small></button>
+        <button class="quick" data-view-go="wroclawska"><b>＋</b><span>Nowe rozliczenie</span><small>Wrocławska</small></button>
+        <button class="quick" data-view-go="settlement"><b>✓</b><span>Rozliczenie końcowe</span><small>Kaucja i media</small></button>
+        <button class="quick" data-view-go="ads"><b>▤</b><span>Przygotuj ogłoszenie</span><small>Zdjęcia i treść</small></button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div><h2>Ostatnie miesiące</h2><p>Historia przeniesiona z pliku Excel</p></div><button class="ghost" data-view-go="history">Pełna historia →</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Mieszkanie</th><th>Miesiąc</th><th>Czynsz najmu</th><th>Opłaty</th><th>Razem</th></tr></thead><tbody id="recentHistory"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-spokojna"></section>
+    <section class="view" id="view-wroclawska"></section>
+
+    <section class="view" id="view-history">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h2>Historia rozliczeń</h2><p id="historyInfo"></p></div>
+          <div class="filters">
+            <select id="histApartment"><option value="all">Oba mieszkania</option><option value="spokojna">Spokojna</option><option value="wroclawska">Wrocławska</option></select>
+            <select id="histYear"></select>
+          </div>
+        </div>
+        <div class="table-wrap history-table"><table><thead><tr><th>Miesiąc</th><th>Mieszkanie</th><th>Najemca</th><th>Czynsz</th><th>Administracja</th><th>Gaz</th><th>Prąd</th><th>Inne</th><th>Razem</th></tr></thead><tbody id="historyBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-settlement">
+      <div class="panel">
+        <div class="panel-head"><div><h2>Rozliczenie końcowe najemcy</h2><p>Moduł mediów, kaucji i potrąceń</p></div><div class="actions"><button class="ghost" id="settImportBtn">Import JSON</button><input id="settImportFile" type="file" accept=".json" hidden><button class="primary" id="settPdf">Pobierz PDF</button></div></div>
+        <div class="form-grid">
+          <label>Mieszkanie<select id="settApt"><option value="wroclawska">Wrocławska</option><option value="spokojna">Spokojna</option></select></label>
+          <label>Najemca<input id="settTenant"></label>
+          <label>Od<input id="settFrom" type="date"></label>
+          <label>Do<input id="settTo" type="date"></label>
+          <label>Liczba miesięcy<input id="settMonths" inputmode="decimal"></label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Odczyty liczników</h3>
+        <div class="table-wrap"><table><thead><tr><th>Licznik</th><th>Stan bazowy</th><th>Stan końcowy</th><th>Zużycie</th></tr></thead>
+        <tbody>
+          <tr><td>Zimna woda</td><td><input id="settZwStart" inputmode="decimal"></td><td><input id="settZwEnd" inputmode="decimal"></td><td id="settZwUse"></td></tr>
+          <tr><td>Ciepła woda</td><td><input id="settCwStart" inputmode="decimal"></td><td><input id="settCwEnd" inputmode="decimal"></td><td id="settCwUse"></td></tr>
+          <tr><td>Ogrzewanie</td><td><input id="settCoStart" inputmode="decimal"></td><td><input id="settCoEnd" inputmode="decimal"></td><td id="settCoUse"></td></tr>
+        </tbody></table></div>
+      </div>
+
+      <div class="panel">
+        <h3>Rozliczenie mediów</h3>
+        <div class="explain"><div><b>Woda i ścieki</b><span id="settWaterExplain"></span></div><div><b>Podgrzanie ciepłej wody</b><span id="settHeatWaterExplain"></span></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Pozycja</th><th>Stawka</th><th>Koszt</th><th>Zaliczka/m-c</th><th>Zaliczki</th><th>Wynik</th></tr></thead><tbody id="settMediaBody"></tbody><tfoot><tr><th>RAZEM</th><th></th><th id="settCostTotal"></th><th></th><th id="settAdvTotal"></th><th id="settMediaResult"></th></tr></tfoot></table></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div><h3>Dodatkowe koszty / potrącenia</h3><p>Farba, rachunek za prąd, sprzątanie, naprawy itd.</p></div><button class="primary" id="settAddCost">+ Dodaj koszt</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Pozycja</th><th>Ilość</th><th>Cena</th><th>Razem</th><th></th></tr></thead><tbody id="settCostsBody"></tbody><tfoot><tr><th colspan="3">SUMA</th><th id="settCostsTotal"></th><th></th></tr></tfoot></table></div>
+        <div class="sett-final"><label>Kaucja<input id="settDeposit" inputmode="decimal"></label><div><span>Końcowo</span><b id="settFinal"></b><small id="settFinalLabel"></small></div></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-ads">
+      <div class="panel">
+        <div class="panel-head"><div><h2>Ogłoszenia najmu</h2><p>Przygotuj treść i zdjęcia, gdy mieszkanie będzie ponownie do wynajęcia.</p></div><select id="adApartment"><option value="wroclawska">Wrocławska</option><option value="spokojna">Spokojna</option></select></div>
+        <div class="ad-layout">
+          <div>
+            <div class="form-grid ad-fields">
+              <label>Tytuł<input id="adTitle"></label><label>Cena najmu<input id="adRent" inputmode="decimal"></label>
+              <label>Czynsz administracyjny<input id="adAdmin" inputmode="decimal"></label><label>Kaucja<input id="adDeposit" inputmode="decimal"></label>
+              <label>Metraż<input id="adArea"></label><label>Piętro<input id="adFloor"></label>
+              <label>Dostępne od<input id="adAvailable" type="date"></label><label>Telefon<input id="adPhone"></label>
+            </div>
+            <label class="full">Opis mieszkania<textarea id="adDescription" rows="8"></textarea></label>
+            <div class="actions"><button class="primary" id="generateAd">Wygeneruj treść</button><button class="ghost" id="copyAd">Kopiuj ogłoszenie</button></div>
+            <label class="full">Gotowe ogłoszenie<textarea id="adOutput" rows="12"></textarea></label>
+          </div>
+          <div>
+            <div class="gallery-head"><h3>Galeria zdjęć</h3><label class="upload-btn">+ Dodaj zdjęcia<input id="adPhotos" type="file" accept="image/*" multiple hidden></label></div>
+            <div class="gallery" id="adGallery"></div>
+            <p class="tiny">Zdjęcia są zapisywane lokalnie w przeglądarce. Dla oszczędności miejsca są automatycznie pomniejszane.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-settings">
+      <div class="settings-grid">
+        <div class="panel">
+          <h2>Zdjęcia główne mieszkań</h2>
+          <p>Jedno zdjęcie widoczne na pulpicie.</p>
+          <div class="photo-settings">
+            <label>Spokojna<input id="photoSpokojna" type="file" accept="image/*"></label>
+            <label>Wrocławska<input id="photoWroclawska" type="file" accept="image/*"></label>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Dane aplikacji</h2>
+          <p>Historia z Excela została wbudowana w aplikację. Nowe wpisy zapisują się lokalnie.</p>
+          <div class="stack-actions">
+            <button class="primary" id="exportApp">Eksport całej aplikacji JSON</button>
+            <button class="ghost" id="importAppBtn">Import danych aplikacji</button><input id="importAppFile" type="file" accept=".json" hidden>
+            <button class="danger" id="resetApp">Przywróć dane bazowe</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Import z Excela</h2>
+          <div class="stats"><b id="importedCount"></b><span>miesięcy szczegółowej historii</span></div>
+          <p>Źródło: <b>kalkulator wynajmu 2021.xlsm</b>. Dane od października 2019 do sierpnia 2026 zostały przeniesione do historii aplikacji.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="ocrModal" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Rozpoznawanie rachunku</h3><button id="ocrClose">×</button></div>
+    <div id="ocrStatus">Wczytywanie...</div>
+    <div id="ocrResult" hidden>
+      <label>Rozpoznana kwota<input id="ocrAmount" inputmode="decimal"></label>
+      <div class="actions"><button class="primary" id="ocrAccept">Zatwierdź kwotę</button><button class="ghost" id="ocrCancel">Anuluj</button></div>
+      <details><summary>Pokaż rozpoznany tekst</summary><pre id="ocrText"></pre></details>
+    </div>
   </div>
-  <div class="actions">
-    <button onclick="window.print()">🖨️ Drukuj / PDF</button>
-    <button id="reset">Przywróć przykład</button>
-  </div>
-</header>
-
-<section>
-<h2>Dane rozliczenia</h2>
-<div class="grid">
-  <label>Lokal<input id="lokal"></label>
-  <label>Najemca<input id="najemca"></label>
-  <label>Od kiedy liczyć zaliczki<input id="od" type="date"></label>
-  <label>Do kiedy liczyć zaliczki<input id="do" type="date"></label>
-  <label>Liczba miesięcy zaliczek<input id="mies" type="text" inputmode="decimal"></label>
-</div>
-</section>
-
-<section>
-<h2>Odczyty liczników</h2>
-<div class="table">
-<table>
-<thead><tr><th>Licznik</th><th>Stan bazowy</th><th>Stan końcowy</th><th>Zużycie</th></tr></thead>
-<tbody>
-<tr><td><b>Zimna woda</b></td><td><input id="zwStart" type="text" inputmode="decimal"></td><td><input id="zwEnd" type="text" inputmode="decimal"></td><td id="zwZuzycie"></td></tr>
-<tr><td><b>Ciepła woda</b></td><td><input id="cwStart" type="text" inputmode="decimal"></td><td><input id="cwEnd" type="text" inputmode="decimal"></td><td id="cwZuzycie"></td></tr>
-<tr><td><b>Ogrzewanie</b></td><td><input id="coStart" type="text" inputmode="decimal"></td><td><input id="coEnd" type="text" inputmode="decimal"></td><td id="coZuzycie"></td></tr>
-</tbody>
-</table>
-</div>
-</section>
-
-<section>
-<h2>Rozliczenie mediów – skąd bierze się koszt</h2>
-<div id="explain" class="explain"></div>
-<div class="table">
-<table>
-<thead>
-<tr>
-<th>Pozycja</th>
-<th>Jak liczony jest koszt</th>
-<th>Stawka</th>
-<th>Koszt rzeczywisty</th>
-<th>Zaliczka / m-c</th>
-<th>Zaliczki razem</th>
-<th>Wynik</th>
-</tr>
-</thead>
-<tbody id="media"></tbody>
-<tfoot>
-<tr><th>RAZEM</th><th></th><th></th><th id="kosztRazem"></th><th></th><th id="zalRazem"></th><th id="wynikRazem"></th></tr>
-</tfoot>
-</table>
-</div>
-</section>
-
-<div class="cards">
-  <article><span>Rzeczywisty koszt mediów</span><b id="sc"></b></article>
-  <article><span>Wpłacone zaliczki</span><b id="sz"></b></article>
-  <article><span>Wynik mediów</span><b id="sw"></b><small id="opis"></small></article>
 </div>
 
-<section>
-<div class="section-head"><div><h2>Dodatkowe koszty / potrącenia z kaucji</h2><p class="hint">Np. rachunek za prąd, farba, wałki, taśmy, sprzątanie lub naprawy.</p></div><button id="addExtraTop" class="primary no-print">+ Dodaj koszt</button></div>
-
-<div class="table">
-<table>
-<thead><tr><th>Pozycja</th><th>Ilość</th><th>Cena jednostkowa</th><th>Razem</th><th class="no-print">Akcja</th></tr></thead>
-<tbody id="extras"></tbody>
-<tfoot><tr><th colspan="3">SUMA DODATKOWYCH KOSZTÓW</th><th id="extrasTotal"></th><th class="no-print"></th></tr></tfoot>
-</table>
-</div>
-<button id="addExtra" class="primary no-print">+ Dodaj kolejną pozycję</button>
-</section>
-
-<section>
-<h2>Kaucja i końcowe podsumowanie</h2>
-<div class="grid one">
-  <label>Kaucja<input id="kaucja" type="text" inputmode="decimal"></label>
-</div>
-<div class="sum">
-  <div>Kaucja <b id="fk"></b></div>
-  <div>Rozliczenie mediów <b id="fm"></b></div>
-  <div>Dodatkowe koszty / potrącenia <b id="fd"></b></div>
-  <div class="total">Końcowo <b id="final"></b></div>
-</div>
-</section>
-
-<section class="buttons no-print">
-  <button id="save" class="primary">Zapisz dane</button>
-  <button id="export">Eksport JSON</button>
-  <button id="importBtn">Import JSON</button>
-  <input id="importFile" type="file" accept=".json,application/json" hidden>
-  <button id="downloadPdf" class="primary">Pobierz PDF</button>
-  <button id="clearData" class="danger">Wyczyść dane</button>
-</section>
-<div id="pdfReport" class="pdf-report"></div>
-</main>
+<script src="history-data.js?v=200"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
-<script src="app.js?v=15"></script>
+<script src="app.js?v=200"></script>
 </body>
 </html>

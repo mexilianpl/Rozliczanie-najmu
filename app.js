@@ -1,475 +1,168 @@
-const K="rozliczenie-v15";
-const base={
-  lokal:"Wrocławska 53A/42",najemca:"",
-  od:"2026-03-01",do:"2026-08-31",mies:6,
-  zwStart:43.088,zwEnd:62.33,
-  cwStart:42.237,cwEnd:55.12,
-  coStart:10.463,coEnd:10.619,
-  stawki:{wodaScieki:14.86,podgrzanie:28,co:125},
-  zaliczki:{wodaScieki:63.90,podgrzanie:61.60,co:62.50},
-  kaucja:0,
-  extras:[
-    {name:"Rachunek za prąd",qty:1,price:0},
-    {name:"Farba",qty:1,price:0},
-    {name:"Wałki / taśmy / materiały",qty:1,price:0}
-  ]
-};
-
-let d=JSON.parse(localStorage.getItem(K)||"null")||structuredClone(base);
-if(!Array.isArray(d.extras)) d.extras=structuredClone(base.extras);
-
+(()=>{"use strict";
+const VERSION="2.0.0", KEY="kalkulatorNajmuV200";
+const HIST=(window.RENTAL_HISTORY&&window.RENTAL_HISTORY.records)||[];
+const PLN=x=>new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN"}).format(num(x));
+const N=x=>new Intl.NumberFormat("pl-PL",{maximumFractionDigits:3}).format(num(x));
+const num=x=>{if(typeof x==="number")return Number.isFinite(x)?x:0;const v=Number(String(x??"").replace(/\s/g,"").replace(",","."));return Number.isFinite(v)?v:0};
+const val=x=>String(x??"").replace(".",",");
+const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $=id=>document.getElementById(id);
-const money=x=>new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN"}).format(+x||0);
-const num=x=>new Intl.NumberFormat("pl-PL",{maximumFractionDigits:3}).format(+x||0);
-const parseNum=x=>{
-  if(typeof x==="number") return Number.isFinite(x)?x:0;
-  const s=String(x??"").trim().replace(/\s/g,"").replace(",",".");
-  const v=Number(s);
-  return Number.isFinite(v)?v:0;
+const latest=(apt)=>[...HIST].reverse().find(r=>r[apt]&&(r[apt].rent||r[apt].admin||r[apt].total))?.[apt]||{};
+const latestRecord=[...HIST].reverse().find(r=>r.period)||{period:"2026-08"};
+const initialState={
+ version:VERSION,
+ photos:{spokojna:"",wroclawska:""},
+ customRecords:[],
+ current:{
+   spokojna:{period:latestRecord.period,tenants:latest("spokojna").tenants||[],rent:latest("spokojna").rent||2800,admin:latest("spokojna").admin||735.96,gas:0,electricity:0,other:[]},
+   wroclawska:{period:latestRecord.period,tenants:latest("wroclawska").tenants||["Dagmara i Dawid"],rent:latest("wroclawska").rent||2400,admin:latest("wroclawska").admin||439.46,gas:0,electricity:0,other:[]}
+ },
+ ads:{
+   spokojna:{title:"Mieszkanie do wynajęcia – Spokojna",rent:2800,admin:735.96,deposit:"",area:"",floor:"",available:"",phone:"",description:"",gallery:[]},
+   wroclawska:{title:"Kawalerka do wynajęcia – Wrocławska 53A",rent:2400,admin:439.46,deposit:"",area:"24 m²",floor:"5",available:"",phone:"532 691 161",description:"Świetna lokalizacja, bez pośredników.",gallery:[]}
+ },
+ settlement:{
+   apt:"wroclawska",tenant:"Dagmara Nowak i Dawid Wojsław",from:"2026-03-01",to:"2026-08-31",months:6,
+   zwStart:43.088,zwEnd:62.33,cwStart:42.237,cwEnd:55.12,coStart:10.463,coEnd:10.619,
+   rates:{water:14.86,heatWater:28,heat:125},adv:{water:63.9,heatWater:61.6,heat:62.5},deposit:2400,
+   costs:[{name:"Rachunek za prąd",qty:1,price:200},{name:"Papier z taśmą",qty:1,price:7.63},{name:"Folia ochronna",qty:2,price:14.43},{name:"Masa gipsowa mała",qty:1,price:21.13},{name:"Taśmy malarskie",qty:1,price:36.88},{name:"Gąbka do szlifowania 180",qty:1,price:5.08},{name:"Farba biała",qty:1,price:134.31}]
+ }
 };
-const n=parseNum;
-const editVal=x=>{
-  if(x===null||x===undefined||x==="") return "";
-  return String(x).replace(".",",");
-};
-
-function save(){localStorage.setItem(K,JSON.stringify(d))}
-function zw(){return Math.max(0,n(d.zwEnd)-n(d.zwStart))}
-function cw(){return Math.max(0,n(d.cwEnd)-n(d.cwStart))}
-function co(){return Math.max(0,n(d.coEnd)-n(d.coStart))}
-function extraTotal(){return d.extras.reduce((s,x)=>s+n(x.qty)*n(x.price),0)}
-
-function mediaRows(){
-  const totalWater=zw()+cw();
-  return [
-    {key:"wodaScieki",n:"Woda + odprowadzenie ścieków",desc:`Zimna ${num(zw())} m³ + ciepła ${num(cw())} m³ = ${num(totalWater)} m³`,sub:"Cała pobrana woda jest podstawą opłaty za wodę i ścieki.",unit:"zł/m³",cost:totalWater*n(d.stawki.wodaScieki),adv:n(d.zaliczki.wodaScieki)},
-    {key:"podgrzanie",n:"Podgrzanie ciepłej wody",desc:`Ciepła woda ${num(cw())} m³`,sub:"Ta sama ilość ciepłej wody jest dodatkowo rozliczana za podgrzanie.",unit:"zł/m³",cost:cw()*n(d.stawki.podgrzanie),adv:n(d.zaliczki.podgrzanie)},
-    {key:"co",n:"Centralne ogrzewanie – opłata zmienna",desc:`Zużycie ${num(co())} GJ`,sub:"Różnica pomiędzy stanem końcowym i bazowym.",unit:"zł/GJ",cost:co()*n(d.stawki.co),adv:n(d.zaliczki.co)}
-  ];
+let state=load();
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));return s&&s.version===VERSION?s:clone(initialState)}catch{return clone(initialState)}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){alert("Pamięć przeglądarki jest pełna. Usuń część zdjęć z galerii lub wyeksportuj dane.")}}
+function allRecords(){const map=new Map(HIST.map(r=>[r.period,clone(r)]));for(const r of state.customRecords){const base=map.get(r.period)||{period:r.period,spokojna:{},wroclawska:{}};base[r.apartment]=clone(r.data);map.set(r.period,base)}return [...map.values()].sort((a,b)=>a.period.localeCompare(b.period))}
+function periodPL(p){if(!p)return"";const [y,m]=p.split("-").map(Number);return new Intl.DateTimeFormat("pl-PL",{month:"long",year:"numeric"}).format(new Date(y,m-1,1))}
+function aptLabel(a){return a==="spokojna"?"Spokojna":"Wrocławska"}
+function aptTotal(d){return num(d.rent)+num(d.admin)+num(d.gas)+num(d.electricity)+(d.other||[]).reduce((s,x)=>s+num(x.amount),0)}
+function setView(name){
+ document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));$("view-"+name)?.classList.add("active");
+ document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===name));
+ const titles={dashboard:["Pulpit","Szybki przegląd obu mieszkań"],spokojna:["Spokojna","Miesięczne rozliczenie mieszkania"],wroclawska:["Wrocławska","Miesięczne rozliczenie mieszkania"],history:["Historia wpłat","Dane przeniesione z wieloletniego arkusza"],settlement:["Rozliczenie końcowe","Media, kaucja i potrącenia"],ads:["Ogłoszenia","Zdjęcia i treść nowego ogłoszenia"],settings:["Ustawienia / dane","Zdjęcia, eksport i kopie bezpieczeństwa"]};
+ $("pageTitle").textContent=titles[name]?.[0]||"";$("pageSub").textContent=titles[name]?.[1]||"";
+ if(name==="dashboard")renderDashboard();if(name==="history")renderHistory();if(name==="settlement")renderSettlement();if(name==="ads")renderAds();
 }
-
-function buildMediaTable(){
-  const rows=[
-    {key:"wodaScieki",name:"Woda + odprowadzenie ścieków",unit:"zł/m³"},
-    {key:"podgrzanie",name:"Podgrzanie ciepłej wody",unit:"zł/m³"},
-    {key:"co",name:"Centralne ogrzewanie – opłata zmienna",unit:"zł/GJ"}
-  ];
-  $("media").innerHTML=rows.map(r=>`
-    <tr>
-      <td><b>${r.name}</b></td>
-      <td><span class="formula" id="desc_${r.key}"></span><span class="muted" id="sub_${r.key}"></span></td>
-      <td>
-        <input id="stawka_${r.key}" type="text" inputmode="decimal">
-        <span class="muted">${r.unit}</span>
-      </td>
-      <td><b id="cost_${r.key}"></b></td>
-      <td><input id="zal_${r.key}" type="text" inputmode="decimal"></td>
-      <td><b id="adv_${r.key}"></b></td>
-      <td id="diff_${r.key}"></td>
-    </tr>`).join("");
-
-  ["wodaScieki","podgrzanie","co"].forEach(k=>{
-    $(`stawka_${k}`).value=editVal(d.stawki[k]??0);
-    $(`zal_${k}`).value=editVal(d.zaliczki[k]??0);
-
-    $(`stawka_${k}`).addEventListener("input",e=>{
-      d.stawki[k]=e.target.value;
-      save();
-      recalc();
-    });
-    $(`zal_${k}`).addEventListener("input",e=>{
-      d.zaliczki[k]=e.target.value;
-      save();
-      recalc();
-    });
-  });
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
+document.addEventListener("click",e=>{const go=e.target.closest("[data-view-go]");if(go)setView(go.dataset.viewGo);const op=e.target.closest("[data-open]");if(op)setView(op.dataset.open)});
+function renderDashboard(){
+ for(const apt of ["spokojna","wroclawska"]){
+  const d=state.current[apt], cap=apt[0].toUpperCase()+apt.slice(1);
+  $("dashPeriod"+cap).textContent=periodPL(d.period);
+  const lines=[["Czynsz najmu",d.rent],["Czynsz administracyjny",d.admin],["Gaz",d.gas],["Prąd",d.electricity],["Inne opłaty",(d.other||[]).reduce((s,x)=>s+num(x.amount),0)]];
+  $("dashLines"+cap).innerHTML=lines.map(x=>`<div class="money-line"><span>${x[0]}</span><b>${PLN(x[1])}</b></div>`).join("");
+  $("dashTotal"+cap).textContent=PLN(aptTotal(d));
+  if(state.photos[apt])$("dashPhoto"+cap).style.backgroundImage=`linear-gradient(0deg,#07121a66,#07121a11),url("${state.photos[apt]}")`;
+ }
+ const rec=allRecords().slice(-8).reverse();
+ $("recentHistory").innerHTML=rec.flatMap(r=>["spokojna","wroclawska"].map(a=>({p:r.period,a,d:r[a]}))).filter(x=>x.d&&x.d.total).slice(0,8).map(x=>`<tr><td>${aptLabel(x.a)}</td><td>${periodPL(x.p)}</td><td>${PLN(x.d.rent)}</td><td>${PLN(num(x.d.total)-num(x.d.rent))}</td><td><b>${PLN(x.d.total)}</b></td></tr>`).join("");
 }
-
-function buildExtras(){
-  $("extras").innerHTML=d.extras.map((x,i)=>`
-    <tr>
-      <td><input id="extra_name_${i}" value="${String(x.name??"").replace(/"/g,"&quot;")}"></td>
-      <td><input id="extra_qty_${i}" type="text" inputmode="decimal" value="${editVal(x.qty??0)}"></td>
-      <td><input id="extra_price_${i}" type="text" inputmode="decimal" value="${editVal(x.price??0)}"></td>
-      <td><b id="extra_total_${i}">${money(n(x.qty)*n(x.price))}</b></td>
-      <td class="no-print"><button class="remove" data-remove="${i}">Usuń</button></td>
-    </tr>`).join("");
-
-  d.extras.forEach((x,i)=>{
-    $(`extra_name_${i}`).addEventListener("input",e=>{d.extras[i].name=e.target.value;save()});
-    $(`extra_qty_${i}`).addEventListener("input",e=>{d.extras[i].qty=e.target.value;save();recalcExtras()});
-    $(`extra_price_${i}`).addEventListener("input",e=>{d.extras[i].price=e.target.value;save();recalcExtras()});
-  });
-
-  document.querySelectorAll("[data-remove]").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      d.extras.splice(Number(btn.dataset.remove),1);
-      save();
-      buildExtras();
-      recalc();
-    });
-  });
-  recalcExtras();
+function renderApartment(apt){
+ const el=$("view-"+apt), d=state.current[apt], cap=apt[0].toUpperCase()+apt.slice(1);
+ el.innerHTML=`<div class="panel">
+ <div class="entry-header"><div class="entry-title"><div class="mini-photo" id="mini_${apt}"></div><div><h2>${aptLabel(apt)}</h2><p>Szybkie rozliczenie miesiąca</p></div></div><b class="entry-total" id="entryTotal_${apt}"></b></div>
+ <div class="form-grid" style="margin-top:14px"><label>Miesiąc<input id="period_${apt}" type="month" value="${esc(d.period)}"></label><label>Najemca / najemcy<input id="tenants_${apt}" value="${esc((d.tenants||[]).join(", "))}"></label></div>
+ <div class="charge-grid" style="margin-top:14px">
+ ${chargeBox(apt,"rent","Czynsz najmu",d.rent,false)}
+ ${chargeBox(apt,"admin","Czynsz administracyjny",d.admin,false)}
+ ${chargeBox(apt,"gas","Gaz",d.gas,true)}
+ ${chargeBox(apt,"electricity","Prąd",d.electricity,true)}
+ </div>
+ <div class="panel-head" style="margin-top:16px"><div><h3>Inne opłaty</h3><p>Notariusz, korekta, jednorazowe opłaty itd.</p></div><button class="ghost" id="addOther_${apt}">+ Dodaj pozycję</button></div>
+ <div class="other-list" id="other_${apt}"></div>
+ <div class="entry-actions"><div class="total-box"><span>RAZEM DO WPŁATY</span><b id="bottomTotal_${apt}"></b></div><div class="actions"><button class="ghost" id="loadLast_${apt}">Przywróć poprzedni miesiąc</button><button class="primary" id="saveMonth_${apt}">Zapisz miesiąc</button></div></div>
+ </div>`;
+ if(state.photos[apt])$("mini_"+apt).style.backgroundImage=`url("${state.photos[apt]}")`;
+ bindApartment(apt);renderOther(apt);updateApartmentTotals(apt);
 }
-
-function recalcExtras(){
-  d.extras.forEach((x,i)=>{
-    const el=$(`extra_total_${i}`);
-    if(el) el.textContent=money(n(x.qty)*n(x.price));
-  });
-  $("extrasTotal").textContent=money(extraTotal());
-  recalcFinalOnly();
+function chargeBox(apt,key,label,value,scan){return `<div class="charge"><div class="charge-head"><label>${label}</label>${scan?`<button class="scan" data-scan="${apt}:${key}">📷 Dodaj rachunek</button>`:""}</div><input id="${key}_${apt}" inputmode="decimal" value="${esc(val(value))}"></div>`}
+function bindApartment(apt){
+ const d=state.current[apt];
+ ["period","tenants","rent","admin","gas","electricity"].forEach(k=>{
+  const el=$(k+"_"+apt);if(!el)return;el.addEventListener("input",()=>{if(k==="tenants")d.tenants=el.value.split(",").map(s=>s.trim()).filter(Boolean);else if(k==="period")d.period=el.value;else d[k]=el.value;save();updateApartmentTotals(apt)});
+ });
+ $("addOther_"+apt).onclick=()=>{d.other.push({name:"",amount:0});save();renderOther(apt)};
+ $("saveMonth_"+apt).onclick=()=>saveMonth(apt);
+ $("loadLast_"+apt).onclick=()=>{const r=[...allRecords()].reverse().find(x=>x[apt]&&x[apt].total);if(r){state.current[apt]={period:r.period,tenants:r[apt].tenants||[],rent:r[apt].rent||0,admin:r[apt].admin||0,gas:r[apt].gas||0,electricity:r[apt].electricity||0,other:clone(r[apt].other||[])};save();renderApartment(apt)}};
+ document.querySelectorAll(`[data-scan^="${apt}:"]`).forEach(b=>b.onclick=()=>openBillScanner(...b.dataset.scan.split(":")));
 }
-
-function recalcFinalOnly(){
-  const r=mediaRows();
-  const koszt=r.reduce((a,m)=>a+m.cost,0);
-  const zal=r.reduce((a,m)=>a+m.adv*n(d.mies),0);
-  const wynik=zal-koszt;
-  const ext=extraTotal();
-
-  $("fk").textContent="+ "+money(d.kaucja);
-  $("fm").textContent=(wynik>=0?"+ ":"- ")+money(Math.abs(wynik));
-  $("fm").className=wynik>=0?"pos":"neg";
-  $("fd").textContent="- "+money(ext);
-
-  const fin=n(d.kaucja)+wynik-ext;
-  $("final").textContent=fin>=0?money(fin):"najemca dopłaca "+money(Math.abs(fin));
-  $("final").className=fin>=0?"pos":"neg";
+function renderOther(apt){
+ const d=state.current[apt], el=$("other_"+apt);if(!el)return;
+ el.innerHTML=(d.other||[]).map((x,i)=>`<div class="other-row"><label>Nazwa<input id="on_${apt}_${i}" value="${esc(x.name)}"></label><label>Kwota<input id="oa_${apt}_${i}" inputmode="decimal" value="${esc(val(x.amount))}"></label><button class="danger" data-delother="${i}">Usuń</button></div>`).join("")||`<div class="muted">Brak dodatkowych pozycji.</div>`;
+ (d.other||[]).forEach((x,i)=>{$("on_"+apt+"_"+i).oninput=e=>{x.name=e.target.value;save()};$("oa_"+apt+"_"+i).oninput=e=>{x.amount=e.target.value;save();updateApartmentTotals(apt)}});
+ el.querySelectorAll("[data-delother]").forEach(b=>b.onclick=()=>{d.other.splice(+b.dataset.delother,1);save();renderOther(apt);updateApartmentTotals(apt)});
 }
-
-function recalc(){
-  $("zwZuzycie").textContent=num(zw())+" m³";
-  $("cwZuzycie").textContent=num(cw())+" m³";
-  $("coZuzycie").textContent=num(co())+" GJ";
-
-  $("explain").innerHTML=`<div class="note"><b>Woda i ścieki</b>Zimna woda + ciepła woda.<span class="muted">${num(zw())} + ${num(cw())} = ${num(zw()+cw())} m³</span></div><div class="note"><b>Podgrzanie ciepłej wody</b>Ciepła woda jest dodatkowo rozliczana za koszt jej podgrzania.<span class="muted">${num(cw())} m³ × ${money(d.stawki.podgrzanie).replace("PLN","").trim()}/m³</span></div>`;
-
-  const r=mediaRows();
-  r.forEach(m=>{
-    $(`desc_${m.key}`).textContent=m.desc;
-    $(`sub_${m.key}`).textContent=m.sub;
-    $(`cost_${m.key}`).textContent=money(m.cost);
-
-    const advTotal=m.adv*n(d.mies);
-    $(`adv_${m.key}`).textContent=money(advTotal);
-
-    const diff=advTotal-m.cost;
-    const de=$(`diff_${m.key}`);
-    de.textContent=(diff>=0?"zwrot ":"dopłata ")+money(Math.abs(diff));
-    de.className=diff>=0?"pos":"neg";
-  });
-
-  const koszt=r.reduce((a,m)=>a+m.cost,0);
-  const zal=r.reduce((a,m)=>a+m.adv*n(d.mies),0);
-  const wynik=zal-koszt;
-
-  $("kosztRazem").textContent=$("sc").textContent=money(koszt);
-  $("zalRazem").textContent=$("sz").textContent=money(zal);
-  $("wynikRazem").textContent=(wynik>=0?"zwrot ":"dopłata ")+money(Math.abs(wynik));
-  $("wynikRazem").className=wynik>=0?"pos":"neg";
-  $("sw").textContent=money(Math.abs(wynik));
-  $("sw").className=wynik>=0?"pos":"neg";
-  $("opis").textContent=wynik>=0?"nadpłata – zwrot za media":"niedopłata – do zapłaty";
-
-  recalcFinalOnly();
+function updateApartmentTotals(apt){const t=aptTotal(state.current[apt]);$("entryTotal_"+apt)&&($("entryTotal_"+apt).textContent=PLN(t));$("bottomTotal_"+apt)&&($("bottomTotal_"+apt).textContent=PLN(t))}
+function saveMonth(apt){
+ const d=state.current[apt], data={tenants:clone(d.tenants),rent:num(d.rent),admin:num(d.admin),gas:num(d.gas),electricity:num(d.electricity),other:(d.other||[]).map(x=>({name:x.name,amount:num(x.amount)})),total:aptTotal(d)};
+ const idx=state.customRecords.findIndex(x=>x.period===d.period&&x.apartment===apt);const row={period:d.period,apartment:apt,data};if(idx>=0)state.customRecords[idx]=row;else state.customRecords.push(row);save();alert("Miesiąc zapisany w historii.");renderDashboard();
 }
-
-function fillStaticInputs(){
-  ["lokal","najemca","od","do"].forEach(k=>{$(k).value=d[k]??""});
-  ["mies","zwStart","zwEnd","cwStart","cwEnd","coStart","coEnd","kaucja"].forEach(k=>{
-    $(k).value=editVal(d[k]??"");
-  });
+renderApartment("spokojna");renderApartment("wroclawska");
+function renderHistory(){
+ const years=[...new Set(allRecords().map(r=>r.period.slice(0,4)))].sort().reverse();if(!$("histYear").dataset.ready){$("histYear").innerHTML=`<option value="all">Wszystkie lata</option>`+years.map(y=>`<option>${y}</option>`).join("");$("histApartment").onchange=renderHistory;$("histYear").onchange=renderHistory;$("histYear").dataset.ready="1"}
+ const af=$("histApartment").value,yf=$("histYear").value;const out=[];
+ for(const r of allRecords().slice().reverse()){if(yf!=="all"&&!r.period.startsWith(yf))continue;for(const a of ["spokojna","wroclawska"]){if(af!=="all"&&af!==a)continue;const d=r[a];if(!d||(!d.total&&!d.rent&&!d.admin))continue;const other=(d.other||[]).reduce((s,x)=>s+num(x.amount),0);out.push(`<tr><td>${periodPL(r.period)}</td><td>${aptLabel(a)}</td><td>${esc((d.tenants||[]).join(", "))}</td><td>${PLN(d.rent)}</td><td>${PLN(d.admin)}</td><td>${PLN(d.gas)}</td><td>${PLN(d.electricity)}</td><td>${PLN(other)}</td><td><b>${PLN(d.total||aptTotal(d))}</b></td></tr>`)}}
+ $("historyBody").innerHTML=out.join("");$("historyInfo").textContent=`${HIST.length} miesięcy szczegółowej historii przeniesionej z Excela + nowe wpisy aplikacji.`;
 }
-
-function bindStaticInputs(){
-  ["lokal","najemca","od","do"].forEach(k=>{
-    $(k).addEventListener("input",e=>{d[k]=e.target.value;save()});
-  });
-
-  ["mies","zwStart","zwEnd","cwStart","cwEnd","coStart","coEnd","kaucja"].forEach(k=>{
-    $(k).addEventListener("input",e=>{
-      d[k]=e.target.value;
-      save();
-      recalc();
-    });
-  });
+let ocrTarget=null,ocrFileInput=null;
+function openBillScanner(apt,key){
+ ocrTarget={apt,key};if(!ocrFileInput){ocrFileInput=document.createElement("input");ocrFileInput.type="file";ocrFileInput.accept="image/*";ocrFileInput.onchange=()=>{const f=ocrFileInput.files[0];if(f)runOCR(f);ocrFileInput.value=""}}ocrFileInput.click();
 }
-
-function addExtraRow(){
-  d.extras.push({name:"",qty:1,price:0});
-  save();
-  buildExtras();
-  const last=d.extras.length-1;
-  const el=$(`extra_name_${last}`);
-  if(el) el.focus();
+async function runOCR(file){
+ $("ocrModal").classList.add("show");$("ocrStatus").hidden=false;$("ocrResult").hidden=true;$("ocrStatus").textContent="Rozpoznaję rachunek lokalnie w przeglądarce…";
+ try{
+  if(!window.Tesseract)throw new Error("Moduł OCR nie został załadowany.");
+  const res=await Tesseract.recognize(file,"pol+eng",{logger:m=>{if(m.status==="recognizing text")$("ocrStatus").textContent=`Rozpoznawanie: ${Math.round((m.progress||0)*100)}%`}});
+  const text=res.data.text||"", amount=detectAmount(text);$("ocrText").textContent=text;$("ocrAmount").value=amount?val(amount):"";$("ocrStatus").hidden=true;$("ocrResult").hidden=false;
+ }catch(e){$("ocrStatus").textContent="Nie udało się odczytać automatycznie: "+e.message}
 }
-
-$("addExtra").onclick=addExtraRow;
-if($("addExtraTop")) $("addExtraTop").onclick=addExtraRow;
-
-$("save").onclick=()=>{save();alert("Dane zapisane.")};
-
-$("reset").onclick=()=>{
-  if(confirm("Przywrócić dane przykładowe?")){
-    d=structuredClone(base);
-    save();
-    fillStaticInputs();
-    buildMediaTable();
-    buildExtras();
-    recalc();
-  }
-};
-
-$("clearData").onclick=()=>{
-  if(confirm("Czy na pewno wyczyścić wszystkie wpisane dane?")){
-    d={
-      lokal:"",najemca:"",od:"",do:"",mies:0,
-      zwStart:0,zwEnd:0,cwStart:0,cwEnd:0,coStart:0,coEnd:0,
-      stawki:{wodaScieki:0,podgrzanie:0,co:0},
-      zaliczki:{wodaScieki:0,podgrzanie:0,co:0},
-      kaucja:0,extras:[]
-    };
-    save();
-    fillStaticInputs();
-    buildMediaTable();
-    buildExtras();
-    recalc();
-  }
-};
-
-$("export").onclick=()=>{
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));
-  a.download="rozliczenie-najmu-v15.json";
-  a.click();
-};
-
-
-function applyImportedData(obj){
-  if(!obj || typeof obj!=="object" || Array.isArray(obj)) throw new Error("Nieprawidłowy plik JSON.");
-  const next=structuredClone(base);
-  ["lokal","najemca","od","do","mies","zwStart","zwEnd","cwStart","cwEnd","coStart","coEnd","kaucja"].forEach(k=>{
-    if(Object.prototype.hasOwnProperty.call(obj,k)) next[k]=obj[k];
-  });
-  if(obj.stawki && typeof obj.stawki==="object"){
-    ["wodaScieki","podgrzanie","co"].forEach(k=>{if(Object.prototype.hasOwnProperty.call(obj.stawki,k)) next.stawki[k]=obj.stawki[k]});
-  }
-  if(obj.zaliczki && typeof obj.zaliczki==="object"){
-    ["wodaScieki","podgrzanie","co"].forEach(k=>{if(Object.prototype.hasOwnProperty.call(obj.zaliczki,k)) next.zaliczki[k]=obj.zaliczki[k]});
-  }
-  next.extras=Array.isArray(obj.extras)?obj.extras.map(x=>({
-    name:String(x?.name??""),
-    qty:x?.qty??1,
-    price:x?.price??0
-  })):[];
-  d=next;
-  save();
-  fillStaticInputs();
-  buildMediaTable();
-  buildExtras();
-  recalc();
+function detectAmount(text){
+ const lines=text.split(/\n/).filter(Boolean), re=/(\d{1,6}(?:[ .]\d{3})*[,.]\d{2})\s*(?:zł|zl|PLN)?/gi;
+ const priority=lines.filter(l=>/do zap.laty|kwota.*zap|razem|nale.no/i.test(l));const source=priority.length?priority:lines;let vals=[];
+ for(const l of source){for(const m of l.matchAll(re)){vals.push(num(m[1].replace(/ /g,"")))}}
+ if(!vals.length){for(const m of text.matchAll(re))vals.push(num(m[1].replace(/ /g,"")))}
+ return vals.filter(x=>x>0&&x<50000).sort((a,b)=>b-a)[0]||0;
 }
-
-$("importBtn").onclick=()=>$("importFile").click();
-$("importFile").addEventListener("change",async e=>{
-  const file=e.target.files?.[0];
-  if(!file) return;
-  try{
-    const obj=JSON.parse(await file.text());
-    applyImportedData(obj);
-    alert("Dane zostały zaimportowane.");
-  }catch(err){
-    alert("Nie udało się zaimportować pliku JSON: "+err.message);
-  }finally{
-    e.target.value="";
-  }
-});
-
-function escapeHtml(s){
-  return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+$("ocrClose").onclick=$("ocrCancel").onclick=()=>$("ocrModal").classList.remove("show");
+$("ocrAccept").onclick=()=>{if(ocrTarget){state.current[ocrTarget.apt][ocrTarget.key]=$("ocrAmount").value;save();renderApartment(ocrTarget.apt);$("ocrModal").classList.remove("show")}};
+function su(){const s=state.settlement;return {zw:Math.max(0,num(s.zwEnd)-num(s.zwStart)),cw:Math.max(0,num(s.cwEnd)-num(s.cwStart)),co:Math.max(0,num(s.coEnd)-num(s.coStart))}}
+function settlementCalc(){const s=state.settlement,u=su(),water=(u.zw+u.cw)*num(s.rates.water),hw=u.cw*num(s.rates.heatWater),co=u.co*num(s.rates.heat),advW=num(s.adv.water)*num(s.months),advHW=num(s.adv.heatWater)*num(s.months),advCO=num(s.adv.heat)*num(s.months);const cost=water+hw+co,adv=advW+advHW+advCO,res=adv-cost,extra=(s.costs||[]).reduce((z,x)=>z+num(x.qty)*num(x.price),0),fin=num(s.deposit)+res-extra;return{u,rows:[["Woda + odprowadzenie ścieków","water",water,advW],["Podgrzanie ciepłej wody","heatWater",hw,advHW],["Centralne ogrzewanie – opłata zmienna","heat",co,advCO]],cost,adv,res,extra,fin}}
+function renderSettlement(){
+ const s=state.settlement;const ids={settApt:"apt",settTenant:"tenant",settFrom:"from",settTo:"to",settMonths:"months",settZwStart:"zwStart",settZwEnd:"zwEnd",settCwStart:"cwStart",settCwEnd:"cwEnd",settCoStart:"coStart",settCoEnd:"coEnd",settDeposit:"deposit"};
+ for(const [id,k] of Object.entries(ids)){const e=$(id);if(document.activeElement!==e)e.value=k==="apt"?s[k]:val(s[k]);if(!e.dataset.bound){e.oninput=()=>{s[k]=e.value;save();renderSettlement()};e.dataset.bound="1"}}
+ const c=settlementCalc();$("settZwUse").textContent=N(c.u.zw)+" m³";$("settCwUse").textContent=N(c.u.cw)+" m³";$("settCoUse").textContent=N(c.u.co)+" GJ";
+ $("settWaterExplain").textContent=`${N(c.u.zw)} m³ zimnej + ${N(c.u.cw)} m³ ciepłej = ${N(c.u.zw+c.u.cw)} m³`;$("settHeatWaterExplain").textContent=`${N(c.u.cw)} m³ ciepłej wody jest dodatkowo rozliczane za podgrzanie.`;
+ $("settMediaBody").innerHTML=c.rows.map(([n,k,cost,adv])=>{const diff=adv-cost;return `<tr><td>${n}</td><td><input class="rate" data-rate="${k}" value="${val(s.rates[k])}"></td><td>${PLN(cost)}</td><td><input class="rate" data-adv="${k}" value="${val(s.adv[k])}"></td><td>${PLN(adv)}</td><td class="${diff>=0?"positive":"negative"}">${diff>=0?"zwrot ":"dopłata "}${PLN(Math.abs(diff))}</td></tr>`}).join("");
+ document.querySelectorAll("[data-rate]").forEach(e=>e.oninput=()=>{s.rates[e.dataset.rate]=e.value;save();renderSettlement()});document.querySelectorAll("[data-adv]").forEach(e=>e.oninput=()=>{s.adv[e.dataset.adv]=e.value;save();renderSettlement()});
+ $("settCostTotal").textContent=PLN(c.cost);$("settAdvTotal").textContent=PLN(c.adv);$("settMediaResult").textContent=(c.res>=0?"zwrot ":"dopłata ")+PLN(Math.abs(c.res));$("settMediaResult").className=c.res>=0?"positive":"negative";
+ $("settCostsBody").innerHTML=(s.costs||[]).map((x,i)=>`<tr><td><input data-scname="${i}" value="${esc(x.name)}"></td><td><input data-scqty="${i}" value="${val(x.qty)}"></td><td><input data-scprice="${i}" value="${val(x.price)}"></td><td>${PLN(num(x.qty)*num(x.price))}</td><td><button class="danger" data-scdel="${i}">Usuń</button></td></tr>`).join("");
+ document.querySelectorAll("[data-scname]").forEach(e=>e.oninput=()=>{s.costs[+e.dataset.scname].name=e.value;save()});document.querySelectorAll("[data-scqty]").forEach(e=>e.onchange=()=>{s.costs[+e.dataset.scqty].qty=e.value;save();renderSettlement()});document.querySelectorAll("[data-scprice]").forEach(e=>e.onchange=()=>{s.costs[+e.dataset.scprice].price=e.value;save();renderSettlement()});document.querySelectorAll("[data-scdel]").forEach(e=>e.onclick=()=>{s.costs.splice(+e.dataset.scdel,1);save();renderSettlement()});
+ $("settCostsTotal").textContent=PLN(c.extra);$("settFinal").textContent=PLN(Math.abs(c.fin));$("settFinal").className=c.fin>=0?"positive":"negative";$("settFinalLabel").textContent=c.fin>=0?"do zwrotu najemcy":"najemca dopłaca";
 }
-
-function buildPdfReport(){
-  const r=mediaRows();
-  const koszt=r.reduce((a,m)=>a+m.cost,0);
-  const zal=r.reduce((a,m)=>a+m.adv*n(d.mies),0);
-  const wynik=zal-koszt;
-  const ext=extraTotal();
-  const fin=n(d.kaucja)+wynik-ext;
-
-  const mediaHtml=r.map(m=>{
-    const advTotal=m.adv*n(d.mies);
-    const diff=advTotal-m.cost;
-    return `<tr>
-      <td>${escapeHtml(m.n)}</td>
-      <td>${escapeHtml(m.desc)}</td>
-      <td>${money(m.cost)}</td>
-      <td>${money(advTotal)}</td>
-      <td>${diff>=0?"zwrot ":"dopłata "}${money(Math.abs(diff))}</td>
-    </tr>`;
-  }).join("");
-
-  const extrasHtml=d.extras.length?d.extras.map(x=>`<tr>
-    <td>${escapeHtml(x.name)}</td><td>${escapeHtml(x.qty)}</td><td>${money(n(x.price))}</td><td>${money(n(x.qty)*n(x.price))}</td>
-  </tr>`).join(""):`<tr><td colspan="4">Brak dodatkowych kosztów</td></tr>`;
-
-  $("pdfReport").innerHTML=`<div class="pdf-doc">
-    <h1>Rozliczenie końcowe najmu</h1>
-    <div class="meta">
-      <div><b>Lokal:</b> ${escapeHtml(d.lokal)}</div>
-      <div><b>Najemca:</b> ${escapeHtml(d.najemca)}</div>
-      <div><b>Okres zaliczek:</b> ${escapeHtml(d.od)} – ${escapeHtml(d.do)}</div>
-      <div><b>Liczba miesięcy:</b> ${escapeHtml(d.mies)}</div>
-    </div>
-
-    <h2>Odczyty liczników</h2>
-    <table><thead><tr><th>Licznik</th><th>Stan bazowy</th><th>Stan końcowy</th><th>Zużycie</th></tr></thead><tbody>
-      <tr><td>Zimna woda</td><td>${escapeHtml(d.zwStart)}</td><td>${escapeHtml(d.zwEnd)}</td><td>${num(zw())} m³</td></tr>
-      <tr><td>Ciepła woda</td><td>${escapeHtml(d.cwStart)}</td><td>${escapeHtml(d.cwEnd)}</td><td>${num(cw())} m³</td></tr>
-      <tr><td>Ogrzewanie</td><td>${escapeHtml(d.coStart)}</td><td>${escapeHtml(d.coEnd)}</td><td>${num(co())} GJ</td></tr>
-    </tbody></table>
-
-    <h2>Rozliczenie mediów</h2>
-    <table><thead><tr><th>Pozycja</th><th>Podstawa</th><th>Koszt</th><th>Zaliczki</th><th>Wynik</th></tr></thead>
-    <tbody>${mediaHtml}</tbody>
-    <tfoot><tr><th colspan="2">RAZEM</th><th>${money(koszt)}</th><th>${money(zal)}</th><th>${wynik>=0?"zwrot ":"dopłata "}${money(Math.abs(wynik))}</th></tr></tfoot></table>
-
-    <h2>Dodatkowe koszty / potrącenia</h2>
-    <table><thead><tr><th>Pozycja</th><th>Ilość</th><th>Cena</th><th>Razem</th></tr></thead><tbody>${extrasHtml}</tbody>
-    <tfoot><tr><th colspan="3">SUMA</th><th>${money(ext)}</th></tr></tfoot></table>
-
-    <h2>Podsumowanie</h2>
-    <table><tbody>
-      <tr><td>Kaucja</td><td>${money(d.kaucja)}</td></tr>
-      <tr><td>Rozliczenie mediów</td><td>${wynik>=0?"+ ":"- "}${money(Math.abs(wynik))}</td></tr>
-      <tr><td>Dodatkowe koszty</td><td>- ${money(ext)}</td></tr>
-    </tbody></table>
-    <div class="final-box ${fin>=0?"green":"red"}"><span>${fin>=0?"DO ZWROTU NAJEMCY":"NAJEMCA DOPŁACA"}</span><span>${money(Math.abs(fin))}</span></div>
-  </div>`;
+$("settAddCost").onclick=()=>{state.settlement.costs.push({name:"",qty:1,price:0});save();renderSettlement()};
+$("settImportBtn").onclick=()=>$("settImportFile").click();$("settImportFile").onchange=async e=>{try{const o=JSON.parse(await e.target.files[0].text());state.settlement={...state.settlement,...o};save();renderSettlement();alert("Rozliczenie zaimportowane.")}catch{alert("Nieprawidłowy plik JSON.")}e.target.value=""};
+$("settPdf").onclick=()=>downloadSettlementPDF();
+function downloadSettlementPDF(){
+ if(!window.jspdf?.jsPDF){alert("Moduł PDF nie został załadowany.");return}const {jsPDF}=window.jspdf,doc=new jsPDF(),s=state.settlement,c=settlementCalc();doc.setFontSize(17);doc.text("ROZLICZENIE KONCOWE NAJMU",14,16);doc.setFontSize(10);doc.text(`Najemca: ${s.tenant}`,14,25);doc.text(`Mieszkanie: ${aptLabel(s.apt)}`,14,31);doc.text(`Okres: ${s.from} - ${s.to}`,14,37);
+ doc.autoTable({startY:44,head:[["Pozycja","Koszt","Zaliczki","Wynik"]],body:c.rows.map(([n,k,cost,adv])=>[n,PLN(cost),PLN(adv),(adv-cost>=0?"zwrot ":"doplata ")+PLN(Math.abs(adv-cost))]),foot:[["RAZEM",PLN(c.cost),PLN(c.adv),(c.res>=0?"zwrot ":"doplata ")+PLN(Math.abs(c.res))]]});
+ doc.autoTable({startY:doc.lastAutoTable.finalY+8,head:[["Potracenie","Ilosc","Cena","Razem"]],body:s.costs.map(x=>[x.name,String(x.qty),PLN(x.price),PLN(num(x.qty)*num(x.price))]),foot:[["SUMA","","",PLN(c.extra)]]});let y=doc.lastAutoTable.finalY+12;doc.setFontSize(13);doc.text(`Kaucja: ${PLN(s.deposit)}`,14,y);doc.setFontSize(16);doc.text(`${c.fin>=0?"DO ZWROTU":"NAJEMCA DOPLACA"}: ${PLN(Math.abs(c.fin))}`,14,y+10);doc.save(`Rozliczenie_${(s.tenant||"najemca").replace(/\W+/g,"_")}.pdf`);
 }
-
-$("downloadPdf").onclick=()=>{
-  if(!window.jspdf || !window.jspdf.jsPDF){
-    alert("Nie udało się załadować modułu PDF. Sprawdź połączenie z internetem i spróbuj ponownie.");
-    return;
-  }
-
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
-  const r=mediaRows();
-  const koszt=r.reduce((a,m)=>a+m.cost,0);
-  const zal=r.reduce((a,m)=>a+m.adv*n(d.mies),0);
-  const wynik=zal-koszt;
-  const ext=extraTotal();
-  const fin=n(d.kaucja)+wynik-ext;
-
-  const pl=x=>money(x).replace(/\u00a0/g," ");
-  const safe=x=>String(x??"");
-
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(18);
-  doc.text("ROZLICZENIE KONCOWE NAJMU",14,16);
-
-  doc.setFont("helvetica","normal");
-  doc.setFontSize(10);
-  doc.text(`Lokal: ${safe(d.lokal)}`,14,24);
-  doc.text(`Najemca: ${safe(d.najemca)}`,14,30);
-  doc.text(`Okres zaliczek: ${safe(d.od)} - ${safe(d.do)}`,14,36);
-  doc.text(`Liczba miesiecy: ${safe(d.mies)}`,14,42);
-
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(12);
-  doc.text("Odczyty licznikow",14,52);
-
-  doc.autoTable({
-    startY:56,
-    head:[["Licznik","Stan bazowy","Stan koncowy","Zuzycie"]],
-    body:[
-      ["Zimna woda",safe(d.zwStart),safe(d.zwEnd),`${num(zw())} m3`],
-      ["Ciepla woda",safe(d.cwStart),safe(d.cwEnd),`${num(cw())} m3`],
-      ["Ogrzewanie",safe(d.coStart),safe(d.coEnd),`${num(co())} GJ`]
-    ],
-    styles:{font:"helvetica",fontSize:9},
-    headStyles:{fontStyle:"bold"}
-  });
-
-  let y=doc.lastAutoTable.finalY+9;
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(12);
-  doc.text("Rozliczenie mediow",14,y);
-
-  const mediaBody=r.map(m=>{
-    const adv=m.adv*n(d.mies);
-    const diff=adv-m.cost;
-    return [m.n,m.desc,pl(m.cost),pl(adv),(diff>=0?"zwrot ":"doplata ")+pl(Math.abs(diff))];
-  });
-
-  doc.autoTable({
-    startY:y+4,
-    head:[["Pozycja","Podstawa","Koszt","Zaliczki","Wynik"]],
-    body:mediaBody,
-    foot:[["RAZEM","",pl(koszt),pl(zal),(wynik>=0?"zwrot ":"doplata ")+pl(Math.abs(wynik))]],
-    styles:{font:"helvetica",fontSize:8,cellPadding:2},
-    headStyles:{fontStyle:"bold"},
-    footStyles:{fontStyle:"bold"},
-    columnStyles:{0:{cellWidth:39},1:{cellWidth:55},2:{cellWidth:28},3:{cellWidth:28},4:{cellWidth:34}}
-  });
-
-  y=doc.lastAutoTable.finalY+9;
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(12);
-  doc.text("Dodatkowe koszty / potracenia",14,y);
-
-  const extrasBody=d.extras.length
-    ? d.extras.map(x=>[safe(x.name),safe(x.qty),pl(n(x.price)),pl(n(x.qty)*n(x.price))])
-    : [["Brak dodatkowych kosztow","","",""]];
-
-  doc.autoTable({
-    startY:y+4,
-    head:[["Pozycja","Ilosc","Cena jednostkowa","Razem"]],
-    body:extrasBody,
-    foot:[["SUMA","","",pl(ext)]],
-    styles:{font:"helvetica",fontSize:9},
-    headStyles:{fontStyle:"bold"},
-    footStyles:{fontStyle:"bold"}
-  });
-
-  y=doc.lastAutoTable.finalY+9;
-  if(y>245){doc.addPage();y=18}
-
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(12);
-  doc.text("Podsumowanie",14,y);
-
-  doc.autoTable({
-    startY:y+4,
-    body:[
-      ["Kaucja",pl(d.kaucja)],
-      ["Rozliczenie mediow",(wynik>=0?"+ ":"- ")+pl(Math.abs(wynik))],
-      ["Dodatkowe koszty","- "+pl(ext)]
-    ],
-    styles:{font:"helvetica",fontSize:10},
-    columnStyles:{0:{fontStyle:"bold"}},
-    theme:"grid"
-  });
-
-  y=doc.lastAutoTable.finalY+10;
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(15);
-  doc.text(fin>=0?"DO ZWROTU NAJEMCY":"NAJEMCA DOPLACA",14,y);
-  doc.text(pl(Math.abs(fin)),196,y,{align:"right"});
-
-  const name=(d.najemca||"najem").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9_-]+/g,"_");
-  doc.save(`Rozliczenie_${name}.pdf`);
+function renderAds(){
+ const apt=$("adApartment").value||"wroclawska",a=state.ads[apt], fields={adTitle:"title",adRent:"rent",adAdmin:"admin",adDeposit:"deposit",adArea:"area",adFloor:"floor",adAvailable:"available",adPhone:"phone",adDescription:"description"};
+ for(const [id,k] of Object.entries(fields)){const e=$(id);if(document.activeElement!==e)e.value=k==="rent"||k==="admin"||k==="deposit"?val(a[k]):a[k]||"";if(!e.dataset.bound){e.oninput=()=>{const aa=state.ads[$("adApartment").value];aa[k]=e.value;save()};e.dataset.bound="1"}}
+ renderGallery(apt);
 }
-
-fillStaticInputs();
-buildMediaTable();
-buildExtras();
-bindStaticInputs();
-recalc();
-
-document.addEventListener("keydown",e=>{
-  if(e.key==="Enter" && e.target && e.target.tagName==="INPUT") e.preventDefault();
-});
+$("adApartment").onchange=renderAds;
+$("generateAd").onclick=()=>{const apt=$("adApartment").value,a=state.ads[apt];$("adOutput").value=`${a.title}\n\nDo wynajęcia ${apt==="wroclawska"?"mieszkanie przy ul. Wrocławskiej":"mieszkanie przy ul. Spokojnej"}.\n${a.area?`Powierzchnia: ${a.area}. `:""}${a.floor?`Piętro: ${a.floor}. `:""}\n\nCzynsz najmu: ${PLN(a.rent)}\nCzynsz administracyjny: ok. ${PLN(a.admin)}${a.deposit?`\nKaucja: ${PLN(a.deposit)}`:""}${a.available?`\nDostępne od: ${a.available}`:""}\n\n${a.description||""}${a.phone?`\n\nKontakt: ${a.phone}`:""}`};
+$("copyAd").onclick=async()=>{try{await navigator.clipboard.writeText($("adOutput").value);alert("Ogłoszenie skopiowane.")}catch{$("adOutput").select();document.execCommand("copy");alert("Ogłoszenie skopiowane.")}};
+$("adPhotos").onchange=async e=>{const apt=$("adApartment").value,a=state.ads[apt];for(const f of [...e.target.files].slice(0,8-a.gallery.length)){a.gallery.push(await resizeImage(f,900,.72))}save();renderGallery(apt);e.target.value=""};
+function renderGallery(apt){const a=state.ads[apt];$("adGallery").innerHTML=(a.gallery||[]).map((src,i)=>`<div class="gallery-item"><img src="${src}" alt="Zdjęcie mieszkania"><button data-gdel="${i}">×</button></div>`).join("")||`<div class="muted">Brak zdjęć. Dodaj zdjęcia do przyszłego ogłoszenia.</div>`;document.querySelectorAll("[data-gdel]").forEach(b=>b.onclick=()=>{a.gallery.splice(+b.dataset.gdel,1);save();renderGallery(apt)})}
+async function resizeImage(file,max=1200,q=.76){return new Promise((resolve,reject)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{let w=img.width,h=img.height;if(Math.max(w,h)>max){const s=max/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s)}const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);resolve(c.toDataURL("image/jpeg",q))};img.onerror=reject;img.src=url})}
+async function setMainPhoto(apt,file){state.photos[apt]=await resizeImage(file,1000,.72);save();renderDashboard();renderApartment(apt)}
+$("photoSpokojna").onchange=e=>e.target.files[0]&&setMainPhoto("spokojna",e.target.files[0]);$("photoWroclawska").onchange=e=>e.target.files[0]&&setMainPhoto("wroclawska",e.target.files[0]);
+$("exportApp").onclick=()=>{const data={version:VERSION,state};const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download="Kalkulator_Najmu_backup.json";a.click()};
+$("importAppBtn").onclick=()=>$("importAppFile").click();$("importAppFile").onchange=async e=>{try{const o=JSON.parse(await e.target.files[0].text());state=o.state||o;state.version=VERSION;save();location.reload()}catch{alert("Nieprawidłowy plik.")}};
+$("resetApp").onclick=()=>{if(confirm("Przywrócić dane bazowe aplikacji? Nowe lokalne wpisy zostaną usunięte.")){state=clone(initialState);save();location.reload()}};
+$("importedCount").textContent=HIST.length;
+renderDashboard();renderHistory();renderSettlement();renderAds();
+})();
