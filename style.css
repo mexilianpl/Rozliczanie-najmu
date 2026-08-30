@@ -26,3 +26,9 @@ nav{display:grid;gap:5px}.nav-btn{border:0;background:transparent;color:#bac8d8;
 .send-option>span{display:block;min-width:0}.send-option b,.send-option small{display:block}.send-option small{color:#91a3b8;margin-top:3px;font-size:11px}
 .send-option:hover{background:#13283a}
 @media(max-width:520px){.card-actions{grid-template-columns:1fr}.send-options{grid-template-columns:1fr}.send-btn,.card-actions .open-btn{min-height:44px}}
+
+.card-actions.three{grid-template-columns:1fr .72fr 1.05fr}
+.pdf-btn{width:100%;border:1px solid #2e6f69;border-radius:9px;padding:11px;background:#10312f;color:#71eadb}
+.pdf-btn:hover{background:#16423e}
+@media(max-width:820px){.card-actions.three{grid-template-columns:1fr 1fr}.card-actions.three .open-btn{grid-column:1/-1}}
+@media(max-width:520px){.card-actions.three{grid-template-columns:1fr}.card-actions.three .open-btn{grid-column:auto}}

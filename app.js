@@ -1,5 +1,5 @@
 (()=>{"use strict";
-const VERSION="2.0.2", KEY="kalkulatorNajmuV202";
+const VERSION="2.0.3", KEY="kalkulatorNajmuV203";
 const APARTMENTS={
 spokojna:window.APARTMENT_SPOKOJNA,
 wroclawska:window.APARTMENT_WROCLAWSKA
@@ -165,16 +165,20 @@ function openSendModal(apt){
 }
 function closeSendModal(){$("sendModal").classList.remove("show")}
 document.querySelectorAll("[data-send]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();openSendModal(b.dataset.send)}));
+document.querySelectorAll("[data-pdf]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();try{downloadMonthlyPdf(b.dataset.pdf)}catch(err){alert("Nie udało się utworzyć PDF: "+err.message)}}));
 $("sendClose").onclick=closeSendModal;
 $("copySendText").onclick=async()=>{
  try{await navigator.clipboard.writeText($("sendPreview").value);alert("Treść skopiowana.")}catch{$("sendPreview").select();document.execCommand("copy");alert("Treść skopiowana.")}
 };
 $("sendEmail").onclick=async()=>{
  if(!sendApt)return;
- try{if(await shareMonthlyPdf(sendApt))return}catch(e){if(e?.name==="AbortError")return}
  const d=state.current[sendApt],subject=`Rozliczenie najmu – ${aptLabel(sendApt)} – ${periodPL(d.period)}`;
+ const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+ if(mobile){
+   try{if(await shareMonthlyPdf(sendApt))return}catch(e){if(e?.name==="AbortError")return}
+ }
  downloadMonthlyPdf(sendApt);
- window.location.href=`mailto:${encodeURIComponent((d.email||"").trim())}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent($("sendPreview").value+"\n\nPDF został pobrany na urządzenie. Dołącz go do wiadomości.")}`;
+ window.location.href=`mailto:${encodeURIComponent((d.email||"").trim())}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent($("sendPreview").value+"\n\nPDF został pobrany na urządzenie. Dołącz pobrany plik PDF do wiadomości.")}`;
 };
 $("sendWhatsApp").onclick=async()=>{
  if(!sendApt)return;

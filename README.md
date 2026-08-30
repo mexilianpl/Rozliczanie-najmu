@@ -1,10 +1,11 @@
-# Kalkulator Najmu v2.0.2
+# Kalkulator Najmu v2.0.3
 
 Zmiany:
-- PDF jest generowany również dla miesięcznego rozliczenia z przycisku „Wyślij”.
-- Na telefonach, które obsługują udostępnianie plików z przeglądarki, PDF jest przekazywany do systemowego menu udostępniania. Stamtąd można wybrać WhatsApp, Messenger lub e-mail.
-- Gdy przeglądarka tego nie obsługuje, PDF jest automatycznie pobierany, a wybrana aplikacja otwierana z gotową treścią.
-- Spokojna i Wrocławska mają osobne pliki konfiguracji i osobne pliki historii.
+- osobny przycisk **Pobierz PDF** bezpośrednio na karcie każdego mieszkania,
+- pozostaje przycisk **Wyślij** z E-mail / WhatsApp / Messenger / Udostępnij PDF,
+- na telefonie systemowe udostępnianie może przekazać rzeczywisty PDF do wybranej aplikacji,
+- na komputerze E-mail pobiera PDF i otwiera domyślny program pocztowy z gotowym tematem i treścią,
+- zachowana rozdzielona struktura danych Spokojnej i Wrocławskiej.
 
 Struktura:
 - index.html
@@ -14,5 +15,3 @@ Struktura:
 - apartments/wroclawska.js
 - data/history-spokojna.js
 - data/history-wroclawska.js
-
-Po aktualizacji usuń stary plik history-data.js z repozytorium, bo nie jest już używany.
