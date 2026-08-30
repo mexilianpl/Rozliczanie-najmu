@@ -1,5 +1,5 @@
 (()=>{"use strict";
-const VERSION="2.0.0", KEY="kalkulatorNajmuV200";
+const VERSION="2.0.1", KEY="kalkulatorNajmuV201";
 const HIST=(window.RENTAL_HISTORY&&window.RENTAL_HISTORY.records)||[];
 const PLN=x=>new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN"}).format(num(x));
 const N=x=>new Intl.NumberFormat("pl-PL",{maximumFractionDigits:3}).format(num(x));
@@ -14,8 +14,8 @@ const initialState={
  photos:{spokojna:"",wroclawska:""},
  customRecords:[],
  current:{
-   spokojna:{period:latestRecord.period,tenants:latest("spokojna").tenants||[],rent:latest("spokojna").rent||2800,admin:latest("spokojna").admin||735.96,gas:0,electricity:0,other:[]},
-   wroclawska:{period:latestRecord.period,tenants:latest("wroclawska").tenants||["Dagmara i Dawid"],rent:latest("wroclawska").rent||2400,admin:latest("wroclawska").admin||439.46,gas:0,electricity:0,other:[]}
+   spokojna:{period:latestRecord.period,tenants:latest("spokojna").tenants||[],email:"",phone:"",rent:latest("spokojna").rent||2800,admin:latest("spokojna").admin||735.96,gas:0,electricity:0,other:[]},
+   wroclawska:{period:latestRecord.period,tenants:latest("wroclawska").tenants||["Dagmara i Dawid"],email:"",phone:"",rent:latest("wroclawska").rent||2400,admin:latest("wroclawska").admin||439.46,gas:0,electricity:0,other:[]}
  },
  ads:{
    spokojna:{title:"Mieszkanie do wynajęcia – Spokojna",rent:2800,admin:735.96,deposit:"",area:"",floor:"",available:"",phone:"",description:"",gallery:[]},
@@ -61,7 +61,7 @@ function renderApartment(apt){
  const el=$("view-"+apt), d=state.current[apt], cap=apt[0].toUpperCase()+apt.slice(1);
  el.innerHTML=`<div class="panel">
  <div class="entry-header"><div class="entry-title"><div class="mini-photo" id="mini_${apt}"></div><div><h2>${aptLabel(apt)}</h2><p>Szybkie rozliczenie miesiąca</p></div></div><b class="entry-total" id="entryTotal_${apt}"></b></div>
- <div class="form-grid" style="margin-top:14px"><label>Miesiąc<input id="period_${apt}" type="month" value="${esc(d.period)}"></label><label>Najemca / najemcy<input id="tenants_${apt}" value="${esc((d.tenants||[]).join(", "))}"></label></div>
+ <div class="form-grid" style="margin-top:14px"><label>Miesiąc<input id="period_${apt}" type="month" value="${esc(d.period)}"></label><label>Najemca / najemcy<input id="tenants_${apt}" value="${esc((d.tenants||[]).join(", "))}"></label><label>E-mail<input id="email_${apt}" type="email" value="${esc(d.email||"")}" placeholder="opcjonalnie"></label><label>Telefon / WhatsApp<input id="phone_${apt}" value="${esc(d.phone||"")}" placeholder="np. 501 234 567"></label></div>
  <div class="charge-grid" style="margin-top:14px">
  ${chargeBox(apt,"rent","Czynsz najmu",d.rent,false)}
  ${chargeBox(apt,"admin","Czynsz administracyjny",d.admin,false)}
@@ -78,12 +78,12 @@ function renderApartment(apt){
 function chargeBox(apt,key,label,value,scan){return `<div class="charge"><div class="charge-head"><label>${label}</label>${scan?`<button class="scan" data-scan="${apt}:${key}">📷 Dodaj rachunek</button>`:""}</div><input id="${key}_${apt}" inputmode="decimal" value="${esc(val(value))}"></div>`}
 function bindApartment(apt){
  const d=state.current[apt];
- ["period","tenants","rent","admin","gas","electricity"].forEach(k=>{
+ ["period","tenants","email","phone","rent","admin","gas","electricity"].forEach(k=>{
   const el=$(k+"_"+apt);if(!el)return;el.addEventListener("input",()=>{if(k==="tenants")d.tenants=el.value.split(",").map(s=>s.trim()).filter(Boolean);else if(k==="period")d.period=el.value;else d[k]=el.value;save();updateApartmentTotals(apt)});
  });
  $("addOther_"+apt).onclick=()=>{d.other.push({name:"",amount:0});save();renderOther(apt)};
  $("saveMonth_"+apt).onclick=()=>saveMonth(apt);
- $("loadLast_"+apt).onclick=()=>{const r=[...allRecords()].reverse().find(x=>x[apt]&&x[apt].total);if(r){state.current[apt]={period:r.period,tenants:r[apt].tenants||[],rent:r[apt].rent||0,admin:r[apt].admin||0,gas:r[apt].gas||0,electricity:r[apt].electricity||0,other:clone(r[apt].other||[])};save();renderApartment(apt)}};
+ $("loadLast_"+apt).onclick=()=>{const r=[...allRecords()].reverse().find(x=>x[apt]&&x[apt].total);if(r){state.current[apt]={period:r.period,tenants:r[apt].tenants||[],email:state.current[apt].email||"",phone:state.current[apt].phone||"",rent:r[apt].rent||0,admin:r[apt].admin||0,gas:r[apt].gas||0,electricity:r[apt].electricity||0,other:clone(r[apt].other||[])};save();renderApartment(apt)}};
  document.querySelectorAll(`[data-scan^="${apt}:"]`).forEach(b=>b.onclick=()=>openBillScanner(...b.dataset.scan.split(":")));
 }
 function renderOther(apt){
@@ -94,7 +94,7 @@ function renderOther(apt){
 }
 function updateApartmentTotals(apt){const t=aptTotal(state.current[apt]);$("entryTotal_"+apt)&&($("entryTotal_"+apt).textContent=PLN(t));$("bottomTotal_"+apt)&&($("bottomTotal_"+apt).textContent=PLN(t))}
 function saveMonth(apt){
- const d=state.current[apt], data={tenants:clone(d.tenants),rent:num(d.rent),admin:num(d.admin),gas:num(d.gas),electricity:num(d.electricity),other:(d.other||[]).map(x=>({name:x.name,amount:num(x.amount)})),total:aptTotal(d)};
+ const d=state.current[apt], data={tenants:clone(d.tenants),email:d.email||"",phone:d.phone||"",rent:num(d.rent),admin:num(d.admin),gas:num(d.gas),electricity:num(d.electricity),other:(d.other||[]).map(x=>({name:x.name,amount:num(x.amount)})),total:aptTotal(d)};
  const idx=state.customRecords.findIndex(x=>x.period===d.period&&x.apartment===apt);const row={period:d.period,apartment:apt,data};if(idx>=0)state.customRecords[idx]=row;else state.customRecords.push(row);save();alert("Miesiąc zapisany w historii.");renderDashboard();
 }
 renderApartment("spokojna");renderApartment("wroclawska");
@@ -104,6 +104,56 @@ function renderHistory(){
  for(const r of allRecords().slice().reverse()){if(yf!=="all"&&!r.period.startsWith(yf))continue;for(const a of ["spokojna","wroclawska"]){if(af!=="all"&&af!==a)continue;const d=r[a];if(!d||(!d.total&&!d.rent&&!d.admin))continue;const other=(d.other||[]).reduce((s,x)=>s+num(x.amount),0);out.push(`<tr><td>${periodPL(r.period)}</td><td>${aptLabel(a)}</td><td>${esc((d.tenants||[]).join(", "))}</td><td>${PLN(d.rent)}</td><td>${PLN(d.admin)}</td><td>${PLN(d.gas)}</td><td>${PLN(d.electricity)}</td><td>${PLN(other)}</td><td><b>${PLN(d.total||aptTotal(d))}</b></td></tr>`)}}
  $("historyBody").innerHTML=out.join("");$("historyInfo").textContent=`${HIST.length} miesięcy szczegółowej historii przeniesionej z Excela + nowe wpisy aplikacji.`;
 }
+
+let sendApt=null;
+function monthlySettlementText(apt){
+ const d=state.current[apt], other=(d.other||[]).filter(x=>num(x.amount)!==0);
+ const lines=[
+   `Rozliczenie najmu – ${aptLabel(apt)}`,
+   `Okres: ${periodPL(d.period)}`,
+   d.tenants?.length?`Najemca: ${d.tenants.join(", ")}`:"",
+   "",
+   `Czynsz najmu: ${PLN(d.rent)}`,
+   `Czynsz administracyjny: ${PLN(d.admin)}`,
+   `Gaz: ${PLN(d.gas)}`,
+   `Prąd: ${PLN(d.electricity)}`
+ ];
+ for(const x of other) lines.push(`${x.name||"Inna opłata"}: ${PLN(x.amount)}`);
+ lines.push("",`RAZEM DO WPŁATY: ${PLN(aptTotal(d))}`);
+ return lines.join("\n");
+}
+function openSendModal(apt){
+ sendApt=apt;
+ const d=state.current[apt];
+ $("sendInfo").textContent=`${aptLabel(apt)} • ${periodPL(d.period)}`;
+ $("sendPreview").value=monthlySettlementText(apt);
+ $("sendModal").classList.add("show");
+}
+function closeSendModal(){$("sendModal").classList.remove("show")}
+document.querySelectorAll("[data-send]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();openSendModal(b.dataset.send)}));
+$("sendClose").onclick=closeSendModal;
+$("copySendText").onclick=async()=>{
+ try{await navigator.clipboard.writeText($("sendPreview").value);alert("Treść skopiowana.")}catch{$("sendPreview").select();document.execCommand("copy");alert("Treść skopiowana.")}
+};
+$("sendEmail").onclick=()=>{
+ if(!sendApt)return;const d=state.current[sendApt], subject=`Rozliczenie najmu – ${aptLabel(sendApt)} – ${periodPL(d.period)}`;
+ window.location.href=`mailto:${encodeURIComponent((d.email||"").trim())}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent($("sendPreview").value)}`;
+};
+$("sendWhatsApp").onclick=()=>{
+ if(!sendApt)return;const d=state.current[sendApt], phone=String(d.phone||"").replace(/\D/g,"");
+ const base=phone?`https://wa.me/${phone.startsWith("48")?phone:"48"+phone}`:"https://wa.me/";
+ window.open(`${base}?text=${encodeURIComponent($("sendPreview").value)}`,"_blank","noopener");
+};
+$("sendMessenger").onclick=async()=>{
+ try{await navigator.clipboard.writeText($("sendPreview").value)}catch{}
+ window.open("https://www.messenger.com/","_blank","noopener");
+ alert("Treść rozliczenia została skopiowana. W Messengerze wybierz osobę i wklej wiadomość.");
+};
+$("sendShare").onclick=async()=>{
+ if(!sendApt)return;const d=state.current[sendApt],title=`Rozliczenie najmu – ${aptLabel(sendApt)} – ${periodPL(d.period)}`;
+ if(navigator.share){try{await navigator.share({title,text:$("sendPreview").value});return}catch(e){if(e?.name==="AbortError")return}}
+ alert("Systemowe udostępnianie nie jest dostępne w tej przeglądarce. Użyj E-mail, WhatsApp lub Messenger.");
+};
 let ocrTarget=null,ocrFileInput=null;
 function openBillScanner(apt,key){
  ocrTarget={apt,key};if(!ocrFileInput){ocrFileInput=document.createElement("input");ocrFileInput.type="file";ocrFileInput.accept="image/*";ocrFileInput.onchange=()=>{const f=ocrFileInput.files[0];if(f)runOCR(f);ocrFileInput.value=""}}ocrFileInput.click();

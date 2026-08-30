@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Kalkulator Najmu</title>
-<link rel="stylesheet" href="style.css?v=200">
+<link rel="stylesheet" href="style.css?v=201">
 </head>
 <body>
 <div class="app-shell">
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-icon">⌂</div>
-      <div><b>Kalkulator Najmu</b><span>v2.0.0</span></div>
+      <div><b>Kalkulator Najmu</b><span>v2.0.1</span></div>
     </div>
     <nav id="nav">
       <button class="nav-btn active" data-view="dashboard">⌂ <span>Pulpit</span></button>
@@ -29,7 +29,7 @@
   <main class="content">
     <header class="topbar">
       <div><h1 id="pageTitle">Pulpit</h1><p id="pageSub">Szybki przegląd obu mieszkań</p></div>
-      <div class="version-pill">Kalkulator Najmu • v2.0.0</div>
+      <div class="version-pill">Kalkulator Najmu • v2.0.1</div>
     </header>
 
     <section class="view active" id="view-dashboard">
@@ -40,7 +40,7 @@
             <div class="apt-title"><div><h2>SPOKOJNA</h2><small id="dashPeriodSpokojna"></small></div><span class="status">Bieżące</span></div>
             <div class="money-lines" id="dashLinesSpokojna"></div>
             <div class="big-total"><span>RAZEM DO WPŁATY</span><b id="dashTotalSpokojna"></b></div>
-            <button class="open-btn" data-open="spokojna">Otwórz rozliczenie</button>
+            <div class="card-actions"><button class="send-btn" data-send="spokojna">↗ Wyślij</button><button class="open-btn" data-open="spokojna">Otwórz rozliczenie</button></div>
           </div>
         </article>
         <article class="apartment-card violet" data-open="wroclawska">
@@ -49,7 +49,7 @@
             <div class="apt-title"><div><h2>WROCŁAWSKA</h2><small id="dashPeriodWroclawska"></small></div><span class="status">Bieżące</span></div>
             <div class="money-lines" id="dashLinesWroclawska"></div>
             <div class="big-total"><span>RAZEM DO WPŁATY</span><b id="dashTotalWroclawska"></b></div>
-            <button class="open-btn" data-open="wroclawska">Otwórz rozliczenie</button>
+            <div class="card-actions"><button class="send-btn" data-send="wroclawska">↗ Wyślij</button><button class="open-btn" data-open="wroclawska">Otwórz rozliczenie</button></div>
           </div>
         </article>
       </div>
@@ -171,6 +171,22 @@
   </main>
 </div>
 
+
+<div class="modal" id="sendModal" aria-hidden="true">
+  <div class="modal-card send-modal-card">
+    <div class="modal-head"><h3>Wyślij rozliczenie</h3><button id="sendClose">×</button></div>
+    <p id="sendInfo" class="muted"></p>
+    <div class="send-options">
+      <button id="sendEmail" class="send-option">✉ <span><b>E-mail</b><small>Otwórz wiadomość z gotową treścią</small></span></button>
+      <button id="sendWhatsApp" class="send-option">☏ <span><b>WhatsApp</b><small>Gotowa treść wiadomości</small></span></button>
+      <button id="sendMessenger" class="send-option">◉ <span><b>Messenger</b><small>Skopiuj treść i otwórz Messenger</small></span></button>
+      <button id="sendShare" class="send-option">↗ <span><b>Udostępnij</b><small>Systemowe udostępnianie telefonu</small></span></button>
+    </div>
+    <label class="full">Treść wiadomości<textarea id="sendPreview" rows="11"></textarea></label>
+    <div class="actions"><button id="copySendText" class="ghost">Kopiuj treść</button></div>
+  </div>
+</div>
+
 <div class="modal" id="ocrModal" aria-hidden="true">
   <div class="modal-card">
     <div class="modal-head"><h3>Rozpoznawanie rachunku</h3><button id="ocrClose">×</button></div>
@@ -183,10 +199,10 @@
   </div>
 </div>
 
-<script src="history-data.js?v=200"></script>
+<script src="history-data.js?v=201"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
-<script src="app.js?v=200"></script>
+<script src="app.js?v=201"></script>
 </body>
 </html>
