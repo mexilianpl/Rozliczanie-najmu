@@ -1,5 +1,7 @@
 (()=>{"use strict";
-const VERSION="2.0.4", KEY="kalkulatorNajmuV204";
+const VERSION="2.0.5", KEY="kalkulatorNajmuV205";
+const PREVIOUS_KEYS=["kalkulatorNajmuV204","kalkulatorNajmuV203","kalkulatorNajmuV202","kalkulatorNajmuV201","kalkulatorNajmuV200"];
+const TAX_CONFIG=window.RENTAL_TAX_CONFIG||{rate:.085};
 const APARTMENTS={
 spokojna:window.APARTMENT_SPOKOJNA,
 wroclawska:window.APARTMENT_WROCLAWSKA
@@ -23,6 +25,7 @@ const initialState={
  version:VERSION,
  photos:{spokojna:"",wroclawska:""},
  customRecords:[],
+ tax:{rate:TAX_CONFIG.rate||.085,paidByPeriod:{}},
  current:{
    spokojna:clone(APARTMENTS.spokojna.defaultCurrent),
    wroclawska:clone(APARTMENTS.wroclawska.defaultCurrent)
@@ -40,7 +43,32 @@ const initialState={
 };
 let state=load();
 function clone(x){return JSON.parse(JSON.stringify(x))}
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY));return s&&s.version===VERSION?s:clone(initialState)}catch{return clone(initialState)}}
+function normalizeState(s){
+ const base=clone(initialState), out=Object.assign(base,s||{});
+ out.version=VERSION;
+ out.photos=Object.assign(base.photos,s?.photos||{});
+ out.current={spokojna:Object.assign(base.current.spokojna,s?.current?.spokojna||{}),wroclawska:Object.assign(base.current.wroclawska,s?.current?.wroclawska||{})};
+ out.ads={spokojna:Object.assign(base.ads.spokojna,s?.ads?.spokojna||{}),wroclawska:Object.assign(base.ads.wroclawska,s?.ads?.wroclawska||{})};
+ out.tax=Object.assign(base.tax,s?.tax||{});
+ out.tax.paidByPeriod=Object.assign({},s?.tax?.paidByPeriod||{});
+ out.tax.rate=TAX_CONFIG.rate||.085;
+ return out;
+}
+function load(){
+ try{
+   const direct=localStorage.getItem(KEY);
+   if(direct)return normalizeState(JSON.parse(direct));
+   for(const k of PREVIOUS_KEYS){
+     const raw=localStorage.getItem(k);
+     if(raw){
+       const migrated=normalizeState(JSON.parse(raw));
+       localStorage.setItem(KEY,JSON.stringify(migrated));
+       return migrated;
+     }
+   }
+ }catch(e){}
+ return clone(initialState);
+}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){alert("Pamięć przeglądarki jest pełna. Usuń część zdjęć z galerii lub wyeksportuj dane.")}}
 function allRecords(){const map=new Map(HIST.map(r=>[r.period,clone(r)]));for(const r of state.customRecords){const base=map.get(r.period)||{period:r.period,spokojna:{},wroclawska:{}};base[r.apartment]=clone(r.data);map.set(r.period,base)}return [...map.values()].sort((a,b)=>a.period.localeCompare(b.period))}
 function periodPL(p){
@@ -60,6 +88,42 @@ function setView(name){
 }
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
 document.addEventListener("click",e=>{const go=e.target.closest("[data-view-go]");if(go)setView(go.dataset.viewGo);const op=e.target.closest("[data-open]");if(op)setView(op.dataset.open)});
+
+function taxPeriod(){
+ const ps=[state.current.spokojna.period,state.current.wroclawska.period].filter(Boolean).sort();
+ return ps[ps.length-1]||latestRecord.period;
+}
+function rentForPeriod(apt,period){
+ const cur=state.current[apt];
+ if(cur?.period===period)return num(cur.rent);
+ const r=[...allRecords()].reverse().find(x=>x.period===period&&x[apt]);
+ return num(r?.[apt]?.rent);
+}
+function renderTaxSummary(){
+ const period=taxPeriod(),rate=num(state.tax?.rate)||.085;
+ const s=rentForPeriod("spokojna",period),w=rentForPeriod("wroclawska",period),total=s+w,due=total*rate;
+ const paid=num(state.tax?.paidByPeriod?.[period]),left=due-paid;
+ $("taxPeriodLabel").textContent=periodPL(period);
+ $("taxIncomeSpokojna").textContent=PLN(s);
+ $("taxIncomeWroclawska").textContent=PLN(w);
+ $("taxIncomeTotal").textContent=PLN(total);
+ $("taxNetSpokojna").textContent="Po podatku: "+PLN(s*(1-rate));
+ $("taxNetWroclawska").textContent="Po podatku: "+PLN(w*(1-rate));
+ $("taxNetTotal").textContent="Po podatku: "+PLN(total-due);
+ $("taxDue").textContent=PLN(due);
+ $("taxPaid").value=val(paid);
+ $("taxToPay").textContent=PLN(Math.abs(left));
+ $("taxToPay").classList.toggle("positive",left<=0);
+ $("taxToPay").classList.toggle("negative",left>0);
+ $("taxResultLabel").textContent=left>0?"DO ZAPŁATY":left<0?"NADPŁATA":"ROZLICZONE";
+ $("taxPaid").oninput=e=>{
+   state.tax.paidByPeriod[period]=num(e.target.value);
+   save();
+   renderTaxSummary();
+   setTimeout(()=>{$("taxPaid")?.focus();$("taxPaid")?.setSelectionRange($("taxPaid").value.length,$("taxPaid").value.length)},0);
+ };
+}
+
 function renderDashboard(){
  for(const apt of ["spokojna","wroclawska"]){
   const d=state.current[apt], cap=apt[0].toUpperCase()+apt.slice(1);
@@ -71,6 +135,7 @@ function renderDashboard(){
  }
  const rec=allRecords().slice(-8).reverse();
  $("recentHistory").innerHTML=rec.flatMap(r=>["spokojna","wroclawska"].map(a=>({p:r.period,a,d:r[a]}))).filter(x=>x.d&&x.d.total).slice(0,8).map(x=>`<tr><td>${aptLabel(x.a)}</td><td>${periodPL(x.p)}</td><td>${PLN(x.d.rent)}</td><td>${PLN(num(x.d.total)-num(x.d.rent))}</td><td><b>${PLN(x.d.total)}</b></td></tr>`).join("");
+ renderTaxSummary();
 }
 function renderApartment(apt){
  const el=$("view-"+apt), d=state.current[apt], cap=apt[0].toUpperCase()+apt.slice(1);
@@ -202,7 +267,7 @@ function monthlySettlementPdfFile(apt){
 
  // Stopka
  doc.setTextColor(120,145,165); doc.setFont("helvetica","normal"); doc.setFontSize(8);
- doc.text("Kalkulator Najmu v2.0.4",x+7,y+224);
+ doc.text("Kalkulator Najmu v2.0.5",x+7,y+224);
 
  const blob=doc.output("blob"),safe=(aptLabel(apt)+"_"+(d.period||"rozliczenie")).replace(/\s+/g,"_");
  return new File([blob],`Rozliczenie_${safe}.pdf`,{type:"application/pdf"});
